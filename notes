@@ -1,0 +1,340 @@
+6502 Processor |
+---------------+
+
+Small number of registers compared to other procs. Challenging to create complex algorithms.
+
+
+-------------------------------------------------------------------
+Registers
+-------------------------------------------------------------------
+
+===============
+Program Counter
+===============
+16 bit register
+points to next instruction to be exececuted.
+Automatically incremented as instructions are executed.
+Can be modified by jumping, branching or subroutine calls, or interrupt returning.
+
+=============
+Stack Pointer
+=============
+Supports a 256 byte stack between $0100 and $01FF.
+Stack pointer is an 8 bit register.
+Holds low 8 bits of next free location on the stack, this location is fixed and cannot be moved.
+Pushing bytes on the stack causes stack pointer to decrement, pulling increments.
+CPU cannot detect overflows, excessive pushing or pulling will result in a crash.
+
+===========
+Accumulator
+===========
+8 Bits.
+Used in all arithmetic and logic operations (except increment and deceremetns).
+Accumulator results can be stored and retrieved from the memory or the stack.
+
+
+=======
+Index X
+=======
+8 bit index register, used to hold counters or memory offsets.
+X can be loaded and saved in memory, compared with values held in memory, incremented or decremented.
+X can be used to get a copy of the stack pointer, or change the stack pointer.
+
+=======
+Index Y
+=======
+Y is like X, cannot be used to get stack pointer copy, however.
+
+======
+Status
+======
+Set as instructions are executed. Each bit is a flag.
+Flags include:
+
+Carry Flag
+-> Set if last operation caused an overflow from bit 7 of the result, or an underflow from bit 0. Set during arithmetic, comparison, and logical shifts. SEC will set this flag and CLC will clear it
+
+Zero Flag
+-> Set if the result of last op was zero
+
+Interrupt Disable
+-> Set if program has executed a Set Interrupt Disable (SEI) instruction. Processor will not respond to interrupts from devices until it's cleared by a CLI instruction.
+
+Decimal Mode
+-> Set processor to obey rules of the Binary COded Decimal (BCD) arithmetic during addition and subraction. Flag cna be set using SED and clear with CLD (Clear decimal flag)
+
+Break Command
+-> Break command bit set when BRK instructoin has been executed and an interrupt has been generated to process it
+
+Overflow Flag
+-> Set during arithmetic operations if the result has yielded an invalid 2's compliment result (adding positive number and ending up with a negative result) determined by looking at the cary between bits 6 and 7 and between bit 7 and carry flag.
+
+Negative flag
+-> Set if the result of the last op has bit 7 set to a one (two's compliment)
+
+-------------------------------------------------------------------
+Instruction set
+-------------------------------------------------------------------
+
+There are 56 instructions across functional groups. They will be listed here for reference.
+
+------------------
+++ Load / Store ++
+------------------
+These operations will transfer a single byte between memory and one of the valid registers (X, Y, A).
+They can set the Negative and Zero flags.
+
+LDA Load Accumulator    (N,Z)
+LDX Load X Register     (N,Z)
+LDY Load Y Register     (N,Z)
+STA Store Accumulator 
+STX Store X Register
+STY Store Y Register
+
+
+-----------------------
+++ Register Transfer ++
+-----------------------
+
+X and Y can be moved to or from the accumulator.
+
+TAX Transfer Accumulator to X       (N,Z)
+TAY Transfer Accumulator to Y       (N,Z)
+TXA Transfer X to Accumulator       (N,z)
+TYA Transfer Y to Accumulator       (N,Z)
+
+
+----------------------
+++ Stack Operations ++ 
+----------------------
+
+6502 supports 256 byte stack fixed between memory locations $0100 and $01FF, an 8-bit register, S is used to keep track of the next free byte of stack space.
+Pushing a byte causes that value to be stored at the current free location. ($0100, S), stack pointer is then decremented. Pull operations do the reverse
+
+TSX Transfer stack pointer to X     (N,Z)
+TXS Transfer X to stack pointer     (N,Z)
+PHA Push Accumulator onto stack
+PHP Push processor status on stack
+PLA Pull Accumulator from stack     (N,Z)
+PLP Pull processor status from stack ALL
+
+-------------
+++ Logical ++
+-------------
+Logical ops are performed on the contents on the accumulator and another memory value. BIT instruction performs a logical AND to test the presence of bits in the memory value
+to set the flags but doesn not keep the result.
+
+AND logical AND                    (N,Z)
+EOR Exclusive OR                   (N,Z)
+ORA Logical Inclusive OR           (N,Z)
+BIT Bit Test                       (N,V,Z)
+
+----------------
+++ Arithmetic ++
+----------------
+
+Addition and subtraction on the accumulator contents. Compare operators allow comparison of accumuilator and X or Y with memory values.
+
+ADC Add with Carry                (N,V,Z,C)
+SBC Subtract with Carry           (N,V,Z,C)
+CMP Compare accumulator           (N,Z,C)
+CPX Compare X Register            (N,Z,C)
+CPY Compare Y Register            (N,Z,C)
+
+---------------------------
+++ Increment / Decrement ++
+---------------------------
+
+Increment or decrement a memory location or one of the X or Y registers by one, N and Z flags set as necessary.
+
+INC Increment a memory location  (N,Z)
+INX Increment the X register     (N,Z)
+INY Increment the Y register     (N,Z)
+DEC Decrement a memory location  (N,Z)
+DEX Decrement the X register     (N,Z)
+DEY Decrement the Y register     (N,Z)
+
+------------
+++ Shifts ++
+------------
+
+Cause the bits within either a memory location or the accumulator to be shifted by one bit position.
+The rotate instructions use the contents if the carry flag is set to fill the vacant position generated by the shift and to catch the overflowing bit.
+Arithmetic and logical shifts shift in an appropriate 0 or 1 bit as appropriate, but catch the overflow bit in the carry flag.
+
+ASL Arithmetic Shift Left       (N,Z,C)
+LSR Logical shift right         (N,Z,C)
+ROL Rotate Left                 (N,Z,C)
+ROR Rotate Right                (N,Z,C)
+
+-------------------
+++ Jumps / Calls ++
+-------------------
+
+Modify the PC causing a break to sequential execution. JSR pushes the old PC onto the stack before changing it to the new location, allowing a subsequent RTS to return exeuction
+
+JMP Jump to another location
+JSR Jump to a subroutine
+RTS Return from subroutine
+
+--------------
+++ Branches ++
+--------------
+
+Branch instructions change program counter if a specified condition is met. Conditions are based on examining a single bit within Proc status
+
+BCC Branch if carry flag clear
+BCS Branch if carry flag set
+BEQ Branch if zero flag set
+BMI Branch if Negative flag set
+BNE Branch if zero flag clear
+BPL Branch if negative flag clear
+BVC Branch if overflow flag clear
+BVs Branch if overflow flag set
+
+-------------------------
+++ Status Flag Changes ++
+-------------------------
+
+Change the values of status flags
+
+CLC Clear Carry Flag
+CLD Clear Decimal Mode Flag
+CLI Clear intterupt disable flag
+CLV Clear overflow flag
+SEC Set carry flag
+SED set decimal mode flag
+SEI set interrupt disable flag
+
+
+----------------------
+++ System Functions ++
+----------------------
+
+Useful, but rarely used instructions
+
+BRK Force an interrupt      B
+NOP No operation
+RTI Return from Interrupt   ALL 
+
+
+-------------------------------------------------------------------
+Addressing Modes
+-------------------------------------------------------------------
+
+Different ways in which memory locations can be addressed. Some instructions support different modes, some support only one.
+X and Y cannot always be used interchangably.
+
+--------------
+++ Implicit ++
+--------------
+CLC
+RTS
+Source and destination of the information to be manipulated is implied directly by the function of the instruction itself, no further operand need be specified.
+
+-----------------
+++ Accumulator ++
+-----------------
+
+LSR A
+ROR A
+
+Instructions that have an option to operate directly on the Accumulator.
+
+---------------
+++ Immediate ++ 
+---------------
+
+LDA #10         ;Load 10 ($0A) into the accumulator
+LDX #LO LABEL   ;Load the LSB of a 16 bit address into X
+LDY #HI LABEL   ;Load the MSB of a 16 bit address into Y 
+
+Immediate addressing allows programmer to specifiy directly an 8 bit constant within the instruction, indicated by a '#' symbol followed by a numeric expression.
+
+---------------
+++ Zero Page ++
+---------------
+
+LDA $00     ;Load accumulator from $00
+ASL Answer  ;Shift labelled location A?NSER left
+
+Instruction using zero page addressing mode only has an 8 bit address operand. Limits it to addressing only the first 256 bytes of memory ($0000 to $00FF) where the most significant
+byte of the address is always zero. In zero page mode, only the least significant byte of the address is held in the instruction making it shorter by one byte (for space saving) and one less
+memory fetch during execution (important for speed).
+
+Assembler will automatically select zero page addressing mode if the operand evaluates to a zero page address and the instruction supports the mode.
+
+-----------------
+++ Zero Page X ++
+-----------------
+
+Calculating the address to access by adding the 8 bit zero page address from the instruction and adding the X register to it. If X contains $0F and the instruction is LDA $80,X then the 
+accumulator will be loaded from $008F since we have $80 + $0F/
+
+We wrap around of the sum of the base address and the register exceed $FF. i.e $80 + $FF == $7F, not $017F.
+
+-----------------
+++ Zero Page Y ++
+-----------------
+
+Same mode as X, but used with Y. Can only be used with LDX and STX instructions, however.
+
+--------------
+++ Relative ++
+--------------
+
+Relative addressing mode is used by branch instructions that contain a signed 8 bit relative offset (-128 to +127) which is added to a PC if the condition is true. 
+As the PC is incremented during instruction execution by two, the effective address range for the target instruction must be within -126 to +129 bytes of the branch.
+
+
+--------------
+++ Absolute ++
+--------------
+
+Instructions using ABsolute Addressing contain a full 15 bit address to identify target location
+
+i.e JMP $1234   ; jump to location $1234
+    JSR WIBBLE  ; jump to subroutine WIBBLE
+    
+There are also Absolute combined with X and Y to do calculations.
+
+i.e STA $3000, X    ; Store accumulator between $3000 and $30FF
+    ROR CRC, X      ; Rotate right one bit
+    
+    AND $4000, Y    ; Perform a logical AND with a byte of memory
+    STA MEM, Y      ; Store accumulator in memory
+    
+--------------
+++ Indirect ++
+--------------
+
+JMP is the only instruction that can use indirect addressing.
+
+15 bit address which identifies location of the least significant byte of another 16 bit memory address which is the real instruction target.
+
+i.e JMP ($FFFC)     ;Force a power on reset
+    JMP (TARGET)    ;Jump via a labelled memory area
+    
+    
+----------------------
+++ Indexed Indirect ++  
+----------------------
+
+Used in conjunction with a table of address held on zero page. Address of table ist aken from the instruction and the X register added to it (with zero page wrap around) 
+to give location of LSB of target address byte.
+
+LDA ($40, X)        ;Load a byte indirectly from memory
+STA (MEM, X)        ;Store accumulator directly into memory
+
+
+-----------------------
+++ Indirect Indexted ++
+-----------------------
+
+Instructions that contain the zero page location in the least singificant byte of a 15 bit address. Y will be added to this value to generate the actual target address.
+
+LDA ($40),Y     ;Load a byte directly from memory
+STA (DST),Y     ;STore accumulator indirectly into memory.
+
+
+
