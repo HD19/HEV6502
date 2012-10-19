@@ -29,17 +29,41 @@
        Memory cpuMem; //CPU's memory, only a block for now.
        byte   program[0x10000]; //Program buffer. To be loaded by wrapper.
        
+       /* Addressing Modes */
+       byte immediate(byte* in);
+       byte accumulator(byte* in);
+       byte zeroPage(byte* in);
+       byte zeroPageX(byte* in);
+       byte zeroPageY(byte* in);
+       byte absolute(byte* in);
+       byte absoluteX(byte* in);
+       byte absoluteY(byte* in);
+       byte indirect(byte* in);
+       byte indexedIndirect(byte* in);
+       byte indirectIndexed(byte* in);
+              
        /* ADC */
-       int adci(byte* in, byte* out);
-       int adcz(byte* in, byte* out);
-       int adczx(byte* in, byte* out);
-       int adca(byte* in, byte* out);
-       int adcax(byte* in, byte* out);
-       int adcay(byte* in, byte* out);
-       int adcix(byte* in, byte* out);
-       int adciy(byte* in, byte* out);
+       int adci(byte* in);
+       int adcz(byte* in);
+       int adczx(byte* in);
+       int adca(byte* in);
+       int adcax(byte* in);
+       int adcay(byte* in);
+       int adcix(byte* in);
+       int adciy(byte* in);
+       
+       /* AND */
+       int andop(byte toAnd);
+       int andi(byte* in);
+       int andz(byte* in);
+       int andzx(byte* in);
+       int anda(byte* in);
+       int andax(byte* in);
+       int anday(byte* in);
+       int andix(byte* in);
+       int andiy(byte* in);
        //Opcode Table
-       //Format will be int opFunc(byte* in, byte* out)
+       //Format will be int opFunc(byte* in))
        //Return type is the number of cycles, in is input, out is output that might be needed. 
        static const opTable[0x100] = {
 //     0x0   0x1    0x2  0x3   0x4   0x5   0x6   0x7   0x8   0x9   0xA   0xB   0xC   0xD   0xE   0xF
