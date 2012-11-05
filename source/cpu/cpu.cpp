@@ -375,3 +375,72 @@ int clv(byte* in)
     overFlag = 0;
     return 2;
 }
+
+int cmpOp(byte toComp)
+{
+    byte res = A - toComp;
+    carryFlag = (res > 0? 1 : 0);
+    signFlag = (res >> 7) &1;
+    zeroFlag = res & 0xFF;
+    return res;
+}
+
+int CPU::cmpi(byte* in)
+{
+    //add with carry immediate
+    A = (cmpOp(*in); & 0xFF);
+    return 2;
+}
+
+int CPU::cmpz(byte* in)
+{
+    A = (cmpOp(cpuMem.loadByte(*in)) & 0xFF);
+    return 3;
+}
+
+int CPU::cmpzx(byte* in)
+{
+    byte val = cpuMem.loadByte(zeroPageX(in));
+    A = (cmpOp(val) & 0xFF);
+    return 4;
+}
+
+int CPU::cmpa(byte* in)
+{
+    byte val = cpuMem.loadByte(absolute(in));
+    A = (cmpOp(val) & 0xFF);
+    return 4;
+}
+
+int CPU::cmpax(byte* in)
+{
+    byte val = cpuMem.loadByte(absoluteX(in));
+    A = (cmpOp(val) & 0xFF);
+    return 4;   //could be +1
+}
+
+int CPU::cmpay(byte* in)
+{
+    byte val = cpuMem.loadByte(absoluteY(in));
+    A = (cmpOp(val) & 0xFF);
+    return 4;   //could be +1
+}
+
+int CPU::cmpix(byte* in)
+{
+    byte val = cpuMem.loadByte(indexedIndirect(in));
+    A = (cmpOp(val) & 0xFF);
+    return 6;
+}
+
+
+int CPU::cmpiy(byte* in)
+{
+    byte val = cpuMem.loadByte(indirectIndexed(in));
+    A = (cmpOp(val) & 0xFF);
+    return 5;
+}
+
+
+
+

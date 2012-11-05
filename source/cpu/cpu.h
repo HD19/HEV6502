@@ -79,23 +79,32 @@
         
         /* Bxx */
         int bcc(byte *in);
-        int bcs(byte *in)
-        int beq(byte *in)
-        int bitz(byte *in)
-        int bita(byte *in)
-        int bmi(byte* in)
-        int bne(byte* in)
-        int bpl(byte* in)
-        int brk(byte* in)
-        int bvc(byte* in)
-        int bvs(byte* in)
+        int bcs(byte *in);
+        int beq(byte *in);
+        int bitz(byte *in);
+        int bita(byte *in);
+        int bmi(byte* in);
+        int bne(byte* in);
+        int bpl(byte* in);
+        int brk(byte* in);
+        int bvc(byte* in);
+        int bvs(byte* in);
         
         /* CLx */
-        int clc(byte* in)
-        int cld(byte* in)
-        int cli(byte* in)
-        int clv(byte* in)
-
+        int clc(byte* in);
+        int cld(byte* in);
+        int cli(byte* in);
+        int clv(byte* in);
+        
+        /* CMP */
+        int cmpi(byte* in);
+        int cmpz(byte* in);
+        int cmpzx(byte* in);
+        int cmpa(byte* in);
+        int cmpax(byte* in);
+        int cmpay(byte* in);
+        int cmpix(byte* in);
+        int cmpiy(byte* in);
 
        //Opcode Table
        //Format will be int opFunc(byte* in))
