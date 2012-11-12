@@ -19,49 +19,84 @@
  class CPU
  {
    private:
-   //We need registers.
-       byte X; // X register
-       byte Y; // Y register
-       byte A; // Accumulator
-       byte SP; // Stack pointer
-       byte ST; // Status Register
-       short PC; // Program Counter
-       Memory cpuMem; //CPU's memory, only a block for now.
-       byte   program[0x10000]; //Program buffer. To be loaded by wrapper.
+        //We need registers.
+        byte X; // X register
+        byte Y; // Y register
+        byte A; // Accumulator
+        byte SP; // Stack pointer
+        byte ST; // Status Register
+        byte carryFlag;
+        byte zeroFlag;
+        byte intFlag;
+        byte decFlag;
+        byte brkFlag;
+        byte overFlag;
+        byte signFlag;
+        short PC; // Program Counter
+        Memory cpuMem; //CPU's memory, only a block for now.
+        byte   program[0x10000]; //Program buffer. To be loaded by wrapper.
        
-       /* Addressing Modes */
-       byte immediate(byte* in);
-       byte accumulator(byte* in);
-       byte zeroPage(byte* in);
-       byte zeroPageX(byte* in);
-       byte zeroPageY(byte* in);
-       byte absolute(byte* in);
-       byte absoluteX(byte* in);
-       byte absoluteY(byte* in);
-       byte indirect(byte* in);
-       byte indexedIndirect(byte* in);
-       byte indirectIndexed(byte* in);
+        /* Addressing Modes */
+        short relative(byte* in);
+        short zeroPageX(byte* in);
+        short zeroPageY(byte* in);
+        short absolute(byte* in);
+        short absoluteX(byte* in);
+        short absoluteY(byte* in);
+        short indirect(byte* in);
+        short indexedIndirect(byte* in);
+        short indirectIndexed(byte* in);
               
-       /* ADC */
-       int adci(byte* in);
-       int adcz(byte* in);
-       int adczx(byte* in);
-       int adca(byte* in);
-       int adcax(byte* in);
-       int adcay(byte* in);
-       int adcix(byte* in);
-       int adciy(byte* in);
+        /* ADC */
+        byte addCOp(byte toAdD);
+        int adci(byte* in);
+        int adcz(byte* in);
+        int adczx(byte* in);
+        int adca(byte* in);
+        int adcax(byte* in);
+        int adcay(byte* in);
+        int adcix(byte* in);
+        int adciy(byte* in);
        
-       /* AND */
-       int andop(byte toAnd);
-       int andi(byte* in);
-       int andz(byte* in);
-       int andzx(byte* in);
-       int anda(byte* in);
-       int andax(byte* in);
-       int anday(byte* in);
-       int andix(byte* in);
-       int andiy(byte* in);
+        /* AND */
+        byte andOp(byte toAnd);
+        int andi(byte* in);
+        int andz(byte* in);
+        int andzx(byte* in);
+        int anda(byte* in);
+        int andax(byte* in);
+        int anday(byte* in);
+        int andix(byte* in);
+        int andiy(byte* in);
+       
+        /* ASL */
+        int aslOp(byte toShift);
+        int aslac(byte* in);
+        int aslz(byte* in);
+        int aslzx(byte* in);
+        int asla(byte* in);
+        int aslax(byte* in);
+        
+        /* Bxx */
+        int bcc(byte *in);
+        int bcs(byte *in)
+        int beq(byte *in)
+        int bitz(byte *in)
+        int bita(byte *in)
+        int bmi(byte* in)
+        int bne(byte* in)
+        int bpl(byte* in)
+        int brk(byte* in)
+        int bvc(byte* in)
+        int bvs(byte* in)
+        
+        /* CLx */
+        int clc(byte* in)
+        int cld(byte* in)
+        int cli(byte* in)
+        int clv(byte* in)
+
+
        //Opcode Table
        //Format will be int opFunc(byte* in))
        //Return type is the number of cycles, in is input, out is output that might be needed. 
