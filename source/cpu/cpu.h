@@ -24,19 +24,20 @@ public:
     virtual byte  loadByte(short address);
     virtual bool  writeWord(short toStore, short address);
     virtual bool  writeByte(byte toStore, short address);
+    virtual short getStartAddr();
 };
 
 
 class CPU
 {
   private:
-    CPU(MemoryController& memory);
+    CPU(MemoryController *memory);
     ~CPU();
-    loadJumpTable();
+    bool loadJumpTable();
        byte X; // X register
        byte Y; // Y register
        byte A; // Accumulator
-       byte SP; // Stack pointer
+       byte SP; // Stack pointer should range between 0x100 and 0x1FF, but only holds 8 bits.
        byte ST; // Status Register
        byte carryFlag;
        byte zeroFlag;
@@ -45,8 +46,9 @@ class CPU
        byte brkFlag;
        byte overFlag;
        byte signFlag;
+       int currentClocks;
        unsigned short PC; // Program Counter
-       MemoryController& cpuMem; //CPU's memory, note it's abstract
+       MemoryController* cpuMem; //CPU's memory, note it's abstract
 
        /* Status flag updates */
        void updateFlagReg();
@@ -309,7 +311,7 @@ class CPU
        //Opcode Table
        //Format will be int opFunc(byte* in))
        //Return type is the number of cycles, in is input, out is output that might be needed. 
-       typedef int (CPU::*FuncPtr)();
+       typedef int (CPU::*FuncPtr)(byte*);
        FuncPtr opTable[256];
 
        int execute();
