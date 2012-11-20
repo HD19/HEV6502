@@ -1,5 +1,69 @@
 #include "assembler.h"
 
+string StringToUpper(string strToConvert)
+{
+    std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), ::toupper);
+
+    return strToConvert;
+}
+
+vector<string> inline SplitString(const string& source, const char *delimiter = " ", bool keepEmpty = false)
+{
+    vector<string> results;
+
+    size_t prev = 0;
+    size_t next = 0;
+
+    while ((next = source.find_first_of(delimiter, prev)) != string::npos)
+    {
+        if (keepEmpty || (next - prev != 0))
+        {
+            results.push_back(source.substr(prev, next - prev));
+        }
+        prev = next + 1;
+    }
+
+    if (prev < source.size())
+    {
+        results.push_back(source.substr(prev));
+    }
+
+    return results;
+}
+
+short extractValue(string toExtract)
+{
+    stringstream ss;
+    short value = -1;
+    
+    if(curString[0] == '$') //hex value
+    {
+        ss << hex << curString.substr(2, curString.length()-1);
+        ss >> value;
+    }
+    else
+    {
+       ss << curString.substr(1, curString.length()-1);
+       ss >> value;
+    }
+    return value;
+    
+}
+
+short getLabel(string toCheck)
+{
+    map<string, short>::iterator it;
+    tmp = StringToUpper(toCheck);
+    if(isdigit(toCheck[0]))
+        return -1;  //No numeric labels, damnit 
+    
+    it = labelMap.find(tmp);
+    if(it != labelMap.end())
+        return (it->second)
+        
+    return -1;
+}
+
 Assembler::Assembler()
 {
     this->currentPC = 0;
@@ -34,6 +98,155 @@ void Assembler::setEntry(byte opCode, byte addrMode, string inst)
         tmp[addrMode] = opCode;
         (opTable[inst]) = tmp;
     }
+    return;
+}
+
+bool Assembler::createLabel(string label, short addr)
+{
+    if(getLabel(label) > 0)
+    {
+        errorStack.push_back("Label " + label + " already exists, not redefining");
+        return false;
+    }
+    
+    labelMap[label] = addr; //Where the code should start, could be -1 if unresolved.   
+    return true; 
+}
+
+bool isInstruction(string& toCheck)
+{
+    string tmp = StringToUpper(toCheck);
+    
+    map<string, short>::iterator it = opTable.find(tmp);
+    if(it == opTable.end())
+        return false;
+    
+    return true;
+}
+
+//return bytes generated
+int Assembler::decodeLine(string toDecode)
+{
+    //Getting a line to decode.
+    vector<string> tokens = SplitString(toDecode);
+    //did we get anything?
+    string& curString = tokens[0];
+    byte currentToken = 0;
+    byte lastToken = tokens.size();
+    byte addrMode = -1;
+    byte* opCodes = NULL;
+    
+    if(!tokens.size())
+    {
+        //we didn't get anything
+        errorStack.push_back("Couldn't tokenize given line!");
+        return -1;
+    }
+    
+    if(curString[curString.length()-1] == ':')
+    {
+        //we're defining a label
+        createLabel(curString.substr(0, curString.length()-1));
+        if((lastToken - currentToken))
+        {
+            currentToken++;
+            curString = tokens[currentToken];
+        }
+        else
+        {
+            //Only this is in the line
+            return 0;
+        }
+    }
+    
+    if(!isInstruction(curString))
+    {
+        errorStack.push_back("Didn't recognize " + curString + " as an instruction!");
+        //we don't have an instruction
+        //so panic
+        return -1;
+    }
+    //figure out what the rest of the string is.
+    string opStr = curString;
+    opCodes = opTable.find(opStr)->second;
+    
+    if((lastToken - currentToken))
+    {
+        currentToken++;
+        curString = tokens[currentToken]
+    }
+    else
+    {
+        //implied instruction
+        addrMode = IMP;
+        if(!opCodes[IMP])
+        {
+            errorStack.push_back("Illegal address mode IMP for " + opStr);
+            return -1;
+        }
+        currentCode.push_back(opCodes[IMP]); //push back the instruction
+        return 1;
+    }
+    
+    //we have an operand
+    if(curString[0] == 'A')
+    {
+        //accumulator
+        if(!opCodes[IMP])
+        {
+            errorStack.push_back("Illegal address mode ACC for " + opStr);
+            return -1;
+        }
+        currentCode.push_back(opCodes[IMP]); 
+        return 1;
+    }
+    if(curString[0] == '#')
+    {
+        curString = curString.substr(1);
+        //immediate
+        byte value;
+        
+        if(!opcodes[IMM] && curString.length() > 1)
+        {
+            errorStack.push_back("Illegal address mode IMM for " + opStr);
+            return -1;
+        }
+        
+        
+        //could be a label
+        if(isdigit(curString))
+        {
+            value = extractNum(curString);       
+            currentCode.push_back(opCodes[IMM]);
+            currentCode.push_back((byte)(value & 0xFF));
+            return 2;
+        }
+    }
+    
+}
+
+int Assembler::assemble()
+{
+    //main logic goes here
+}
+
+void Assembler::setText(string* text)
+{
+    inputBuffer = text;   
+}
+
+byte* Assembler::getBinary()
+{
+    return outputBlock;
+}
+
+void Assembler::setOffset(short offSet)
+{
+    this->offset = offset;
+}
+
+void Assembler::outputToFile(string fileName)
+{
     return;
 }
 
@@ -137,5 +350,120 @@ void Assembler::loadTable()
     setEntry(0xE8, IMP, "INX");
     setEntry(0xC8, IMP, "INY");
 
-
+    /* JMP */
+    setEntry(0x4C, ABS, "JMP");
+    setEntry(0x6C, IND, "JMP");
+    
+    setEntry(0x20, ABS, "JSR");
+    
+    /* LDA */
+    setEntry(0xA9, IMM, "LDA");
+    setEntry(0xA5, ZP,  "LDA");
+    setEntry(0xB5, ZPX, "LDA");
+    setEntry(0xAD, ABS, "LDA");
+    setEntry(0xBD, ABX, "LDA");
+    setEntry(0xB9, ABY, "LDA");
+    setEntry(0xA1, IDX, "LDA");
+    setEntry(0xB1, IDY, "LDA");
+    
+    /* LDX */
+    setEntry(0xA2, IMM, "LDX");
+    setEntry(0xA6, ZP,  "LDX");
+    setEntry(0xB6, ZPY, "LDX");
+    setEntry(0xAE, ABS, "LDX");
+    setEntry(0xBE, ABY, "LDX");
+    
+    /* LDY */
+    setEntry(0xA0, IMM, "LDY");
+    setEntry(0xA4, ZP,  "LDY");
+    setEntry(0xB4, ZPX, "LDY");
+    setEntry(0xAC, ABS, "LDY");
+    setEntry(0xBC, ABX, "LDY");
+    
+    /* LSR */
+    setEntry(0x4A, IMP, "LSR");
+    setEntry(0x46, ZP,  "LSR");
+    setEntry(0x56, ZPX, "LSR");
+    setEntry(0x4E, ABS, "LSR");
+    setEntry(0x5E, ABX, "LSR");
+    
+    /* NOP */
+    setEntry(0xEA, IMP, "NOP");
+    
+    /* ORA */
+    setEntry(0x09, IMM, "ORA");
+    setEntry(0x05, ZP,  "ORA");
+    setEntry(0x15, ZPX, "ORA");
+    setEntry(0x0D, ABS, "ORA");
+    setEntry(0x1D, ABX, "ORA");
+    setEntry(0x19, ABY, "ORA");
+    setEntry(0x01, IDX, "ORA");
+    setEntry(0x11, IDY, "ORA");
+    
+    /* pushing and pulling */
+    setEntry(0x48, IMP, "PHA");
+    setEntry(0x08, IMP, "PHP");
+    setEntry(0x68, IMP, "PLA");
+    setEntry(0x28, IMP, "PLP");
+    
+    /* ROL */
+    setEntry(0x2A, IMP, "ROL");
+    setEntry(0x26, ZP,  "ROL");
+    setEntry(0x36, ZPX, "ROL");
+    setEntry(0x2E, ABS, "ROL");
+    setEntry(0x3E, ABX, "ROL");
+    
+    /* ROR */
+    setEntry(0x6A, IMP, "ROR");
+    setEntry(0x66, ZP,  "ROR");
+    setEntry(0x76, ZPX, "ROR");
+    setEntry(0x6E, ABS, "ROR");
+    setEntry(0x7E, ABX, "ROR");
+    
+    setEntry(0x40, IMP, "RTI");
+    
+    setEntry(0x60, IMP, "RTS");
+    
+    /* SBC */
+    setEntry(0xE9, IMM, "SBC");
+    setEntry(0xE5, ZP,  "SBC");
+    setEntry(0xF5, ZPX, "SBC");
+    setEntry(0xED, ABS, "SBC");
+    setEntry(0xFD, ABX, "SBC");
+    setEntry(0xF9, ABY, "SBC");
+    setEntry(0xE1, IDX, "SBC");
+    setEntry(0xF1, IDY, "SBC");  
+    
+    setEntry(0x38, IMP, "SEC");
+    setEntry(0xF8, IMP, "SED");
+    setEntry(0x78, IMP, "SEI");
+    
+    /* STA */
+    setEntry(0x85, ZP,  "STA");
+    setEntry(0x95, ZPX, "STA");
+    setEntry(0x8D, ABS, "STA");
+    setEntry(0x9D, ABX, "STA");
+    setEntry(0x99, ABY, "STA");
+    setEntry(0x81, IDX, "STA");
+    setEntry(0x91, IDY, "STA");
+    
+    /* STX */
+    setEntry(0x86, ZP,  "STX");
+    setEntry(0x96, ZPY, "STX");
+    setEntry(0x8E, ABS, "STX");
+    
+    /* STY */
+    setEntry(0x84, ZP,  "STY");
+    setEntry(0x94, ZPX, "STY");
+    setEntry(0x8C, ABS, "STY");
+    
+    /* Txx */
+    setEntry(0xAA, IMP, "TAX");
+    setEntry(0xA8, IMP, "TAY");
+    setEntry(0xBA, IMP, "TSX");
+    setEntry(0x8A, IMP, "TXA");
+    setEntry(0x9A, IMP, "TXS");
+    setEntry(0x98, IMP, "TYA");
+    
+    //Table should be all set.      
 }
