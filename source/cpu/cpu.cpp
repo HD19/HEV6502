@@ -254,31 +254,38 @@ bool CPU::loadJumpTable()
 int CPU::execute()
 {
     //PC == current opcode, call the function at the jump table.
-
+    int res = 0;
+    byte tmp = 0;
+    while(res != -1) //while we haven't been ordered to HALT
+    {
+        tmp = cpuMem->loadByte(PC);
+        ++PC;
+        (this->*opTable[tmp])(); //calling necessary function;
+    }
 }
 
-short CPU::relative(byte* in)
+short CPU::relative()
 {
-    short addr = cpuMem->loadWord(*in);
+    short addr = cpuMem->loadWord(PC);
     (addr < 0x80)? addr+= PC : addr += (PC - 256); 
     return addr;
 }
  
-short CPU::zeroPageX(byte* in)
+short CPU::zeroPageX()
 {
-    short addr = (*in);
+    short addr = cpuMem->loadByte(PC);
     addr = (( addr + X ) & 0xFF);
     return addr;
 }
 
-short CPU::zeroPageY(byte* in)
+short CPU::zeroPageY()
 {
-    short addr = (*in);
+    short addr = cpuMem->loadByte(PC);
     addr = (( addr + Y ) & 0xFF);
     return addr;
 }
 
-short CPU::absolute(byte* in)
+short CPU::absolute()
 {
     //full address
     short addr = ((*++in) << 8); //high byte
@@ -286,7 +293,7 @@ short CPU::absolute(byte* in)
     //byte res = cpuMem->loadByte(addr);
     return addr;
 }
-short CPU::absoluteX(byte* in)
+short CPU::absoluteX()
 {
     //full address + X with wrapping..maybe
     byte low = (*in);
@@ -296,7 +303,7 @@ short CPU::absoluteX(byte* in)
     //byte res = cpuMem->loadByte(addr);
     return addr;
 }
-short CPU::absoluteY(byte* in)
+short CPU::absoluteY()
 {
     //full address + Y with wrapping..maybe
     byte low = (*in);
@@ -306,7 +313,7 @@ short CPU::absoluteY(byte* in)
     //byte res = cpuMem->loadByte(addr);
     return addr;
 }
-short CPU::indirect(byte* in)
+short CPU::indirect()
 {
     //used for jump, load address from address.
     short addr = (((*++in) << 8) & 0xFF00);
@@ -317,7 +324,7 @@ short CPU::indirect(byte* in)
 
 }
 //returning the address to work with.
-short CPU::indexedIndirect(byte* in)
+short CPU::indexedIndirect()
 {
     //we're loading the address at ($00(x + *in))
     short addr = (*in) + X;
@@ -328,7 +335,7 @@ short CPU::indexedIndirect(byte* in)
     return target; 
 }
 //returning the address to work with
-short CPU::indirectIndexed(byte* in)
+short CPU::indirectIndexed()
 {
     //rol ($2A), Y
     //The value $03 in Y is added to the address $C235 at addresses $002A and $002B for a sum of $C238. 
@@ -414,48 +421,48 @@ byte CPU::addCOp(byte toAdd)
     return (byte)res;
 }
 
-int CPU::adci(byte* in)
+int CPU::adci()
 {
     //add with carry immediate
     A = (addCOp(*in) & 0xFF);
     return 2;
 }
 
-int CPU::adcz(byte* in)
+int CPU::adcz()
 {
     A = (addCOp(cpuMem->loadByte(*in)) & 0xFF);
     return 3;
 }
 
-int CPU::adczx(byte* in)
+int CPU::adczx()
 {
     byte val = cpuMem->loadByte(zeroPageX(in));
     A = (addCOp(val) & 0xFF);
     return 4;
 }
 
-int CPU::adca(byte* in)
+int CPU::adca()
 {
     byte val = cpuMem->loadByte(absolute(in));
     A = (addCOp(val) & 0xFF);
     return 4;
 }
 
-int CPU::adcax(byte* in)
+int CPU::adcax()
 {
     byte val = cpuMem->loadByte(absoluteX(in));
     A = (addCOp(val) & 0xFF);
     return 4;   //could be +1
 }
 
-int CPU::adcay(byte* in)
+int CPU::adcay()
 {
     byte val = cpuMem->loadByte(absoluteY(in));
     A = (addCOp(val) & 0xFF);
     return 4;   //could be +1
 }
 
-int CPU::adcix(byte* in)
+int CPU::adcix()
 {
     byte val = cpuMem->loadByte(indexedIndirect(in));
     A = (addCOp(val) & 0xFF);
@@ -463,7 +470,7 @@ int CPU::adcix(byte* in)
 }
 
 
-int CPU::adciy(byte* in)
+int CPU::adciy()
 {
     byte val = cpuMem->loadByte(indirectIndexed(in));
     A = (addCOp(val) & 0xFF);
@@ -481,54 +488,54 @@ byte CPU::andOp(byte toAnd)
     
 }
 
-int CPU::andi(byte* in)
+int CPU::andi()
 {
     A = andOp((*in));
     return 2;
 }
 
-int CPU::andz(byte* in)
+int CPU::andz()
 {
     A = andOp(cpuMem->loadByte((*in)));
     return 3;
 }
 
-int CPU::andzx(byte* in)
+int CPU::andzx()
 {
     byte res = cpuMem->loadByte(zeroPageX(in));
     A = andOp(res);
     return 4;
 }
 
-int CPU::anda(byte* in)
+int CPU::anda()
 {
     byte res = cpuMem->loadByte(absolute(in));
     A = andOp(res);
     return 4;
 }
 
-int CPU::andax(byte* in)
+int CPU::andax()
 {
     byte res = cpuMem->loadByte(absoluteX(in));
     A = andOp(res);
     return 4; //could be + 1
 }
 
-int CPU::anday(byte* in)
+int CPU::anday()
 {
     byte res = cpuMem->loadByte(absoluteY(in));
     A = andOp(res);
     return 4; //could be + 1
 }
 
-int CPU::andix(byte* in)
+int CPU::andix()
 {
     byte res = cpuMem->loadByte(indexedIndirect(in));
     A = andOp(res);
     return 6;    
 }
 
-int CPU::andiy(byte* in)
+int CPU::andiy()
 {
     byte res = cpuMem->loadByte(indirectIndexed(in));
     A = andOp(res);
@@ -546,31 +553,31 @@ byte CPU::aslOp(byte toShift)
     return res;
 }
 
-int CPU::aslac(byte* in) //accumulator
+int CPU::aslac() //accumulator
 {
     A = aslOp(A);
     return 2;
 }
 
-int CPU::aslz(byte* in)
+int CPU::aslz()
 {
     cpuMem->writeByte(aslOp(cpuMem->loadByte(*in)), *in);
     return 5;
 }
 
-int CPU::aslzx(byte* in)
+int CPU::aslzx()
 {
     cpuMem->writeByte(aslOp(cpuMem->loadByte(zeroPageX(in))), zeroPageX(in));
     return 6;
 }
 
-int CPU::asla(byte* in)
+int CPU::asla()
 {
     cpuMem->writeByte(aslOp(cpuMem->loadByte(absolute(in))), absolute(in));
     return 6;
 }
 
-int CPU::aslax(byte* in)
+int CPU::aslax()
 {
     cpuMem->writeByte(aslOp(cpuMem->loadByte(absoluteX(in))), absoluteX(in));
     return 7;
@@ -619,28 +626,28 @@ int CPU::bita(byte *in)
     return 4;
 }
 
-int CPU::bmi(byte* in)
+int CPU::bmi()
 {
     if(signFlag)
         PC = relative(in);
     return 2;
 }
 
-int CPU::bne(byte* in)
+int CPU::bne()
 {
     if(!zeroFlag)
         PC = relative(in);
     return 2;
 }
 
-int CPU::bpl(byte* in)
+int CPU::bpl()
 {
     if(!signFlag)
         PC = relative(in);
     return 2;
 }
 
-int CPU::brk(byte* in)
+int CPU::brk()
 {
     //forces interrupt
     PC += 2; //increment counter
@@ -656,7 +663,7 @@ int CPU::brk(byte* in)
     return 7;
 }
 
-int CPU::bvc(byte* in)
+int CPU::bvc()
 {
     //branch if overflow clear
     if(!overFlag)
@@ -664,32 +671,32 @@ int CPU::bvc(byte* in)
     return 2;
 }
 
-int CPU::bvs(byte* in)
+int CPU::bvs()
 {
     if(overFlag)
         PC = relative(in);
     return 2;
 } 
 
-int CPU::clc(byte* in)
+int CPU::clc()
 {
     carryFlag = 0;
     return 2;
 }
 
-int CPU::cld(byte* in)
+int CPU::cld()
 {
     decFlag = 0;
     return 2;
 }
 
-int CPU::cli(byte* in)
+int CPU::cli()
 {
     intFlag = 0;
     return 2;
 }
 
-int CPU::clv(byte* in)
+int CPU::clv()
 {
     overFlag = 0;
     return 2;
@@ -704,51 +711,51 @@ byte CPU::cmpOp(byte toComp)
     return res;
 }
 
-int CPU::cmpi(byte* in)
+int CPU::cmpi()
 {
     //add with carry immediate
     cmpOp(*in);
     return 2;
 }
 
-int CPU::cmpz(byte* in)
+int CPU::cmpz()
 {
     cmpOp(cpuMem->loadByte(*in));
     return 3;
 }
 
-int CPU::cmpzx(byte* in)
+int CPU::cmpzx()
 {
     cmpOp(cpuMem->loadByte(zeroPageX(in)));
     return 4;
 }
 
-int CPU::cmpa(byte* in)
+int CPU::cmpa()
 {
     cpuMem->loadByte(absolute(in));
     return 4;
 }
 
-int CPU::cmpax(byte* in)
+int CPU::cmpax()
 {
     cpuMem->loadByte(absoluteX(in));
     return 4;   //could be +1
 }
 
-int CPU::cmpay(byte* in)
+int CPU::cmpay()
 {
     cpuMem->loadByte(absoluteY(in));
     return 4;   //could be +1
 }
 
-int CPU::cmpix(byte* in)
+int CPU::cmpix()
 {
     cpuMem->loadByte(indexedIndirect(in));
     return 6;
 }
 
 
-int CPU::cmpiy(byte* in)
+int CPU::cmpiy()
 {
     cpuMem->loadByte(indirectIndexed(in));
     return 5;
@@ -763,19 +770,19 @@ byte CPU::cpxOp(byte toComp)
     return res;
 }
 
-int CPU::cpxi(byte* in)
+int CPU::cpxi()
 {
     cpxOp(*in);
     return 2;
 }
 
-int CPU::cpxz(byte* in)
+int CPU::cpxz()
 {
     cpxOp(cpuMem->loadByte(*in));
     return 3;
 }
 
-int CPU::cpxa(byte* in)
+int CPU::cpxa()
 {
     cpxOp(cpuMem->loadByte(absolute(in)));
     return 4;
@@ -790,19 +797,19 @@ byte CPU::cpyOp(byte toComp)
     return res;
 }
 
-int CPU::cpyi(byte* in)
+int CPU::cpyi()
 {
     cpyOp(*in);
     return 2;
 }
 
-int CPU::cpyz(byte* in)
+int CPU::cpyz()
 {
     cpyOp(cpuMem->loadByte(*in));
     return 3;
 }
 
-int CPU::cpya(byte* in)
+int CPU::cpya()
 {
     cpyOp(cpuMem->loadByte(absolute(in)));
     return 4;
@@ -816,31 +823,31 @@ byte CPU::decOp(byte toDec)
     return res;
 }
 
-int CPU::decz(byte* in)
+int CPU::decz()
 {
     cpuMem->writeByte(cpuMem->loadByte(*in), *in);
     return 5;
 }
 
-int CPU::deczx(byte* in)
+int CPU::deczx()
 {
     cpuMem->writeByte(cpuMem->loadByte(zeroPageX(in)), zeroPageX(in));
     return 6;
 }
 
-int CPU::deca(byte* in)
+int CPU::deca()
 {
     cpuMem->writeByte(cpuMem->loadByte(absolute(in)), absolute(in));
     return 6;
 }
 
-int CPU::decax(byte* in)
+int CPU::decax()
 {
     cpuMem->writeByte(cpuMem->loadByte(absoluteX(in)), absoluteX(in));
     return 7;
 }
 
-int CPU::dex(byte* in)
+int CPU::dex()
 {
     X -= 1;
     zeroFlag = X;
@@ -848,7 +855,7 @@ int CPU::dex(byte* in)
     return 2;
 }
 
-int CPU::dey(byte* in)
+int CPU::dey()
 {
     Y -= 1;
     zeroFlag = Y;
@@ -868,54 +875,54 @@ byte CPU::eorOp(byte toeor)
 
 }
 
-int CPU::eori(byte* in)
+int CPU::eori()
 {
     A = eorOp((*in));
     return 2;
 }
 
-int CPU::eorz(byte* in)
+int CPU::eorz()
 {
     A = eorOp(cpuMem->loadByte((*in)));
     return 3;
 }
 
-int CPU::eorzx(byte* in)
+int CPU::eorzx()
 {
     byte res = cpuMem->loadByte(zeroPageX(in));
     A = eorOp(res);
     return 4;
 }
 
-int CPU::eora(byte* in)
+int CPU::eora()
 {
     byte res = cpuMem->loadByte(absolute(in));
     A = eorOp(res);
     return 4;
 }
 
-int CPU::eorax(byte* in)
+int CPU::eorax()
 {
     byte res = cpuMem->loadByte(absoluteX(in));
     A = eorOp(res);
     return 4; //could be + 1
 }
 
-int CPU::eoray(byte* in)
+int CPU::eoray()
 {
     byte res = cpuMem->loadByte(absoluteY(in));
     A = eorOp(res);
     return 4; //could be + 1
 }
 
-int CPU::eorix(byte* in)
+int CPU::eorix()
 {
     byte res = cpuMem->loadByte(indexedIndirect(in));
     A = eorOp(res);
     return 6;
 }
 
-int CPU::eoriy(byte* in)
+int CPU::eoriy()
 {
     byte res = cpuMem->loadByte(indirectIndexed(in));
     A = eorOp(res);
@@ -930,31 +937,31 @@ byte CPU::incOp(byte toinc)
     return res;
 }
 
-int CPU::incz(byte* in)
+int CPU::incz()
 {
     cpuMem->writeByte(cpuMem->loadByte(*in), *in);
     return 5;
 }
 
-int CPU::inczx(byte* in)
+int CPU::inczx()
 {
     cpuMem->writeByte(cpuMem->loadByte(zeroPageX(in)), zeroPageX(in));
     return 6;
 }
 
-int CPU::inca(byte* in)
+int CPU::inca()
 {
     cpuMem->writeByte(cpuMem->loadByte(absolute(in)), absolute(in));
     return 6;
 }
 
-int CPU::incax(byte* in)
+int CPU::incax()
 {
     cpuMem->writeByte(cpuMem->loadByte(absoluteX(in)), absoluteX(in));
     return 7;
 }
 
-int CPU::inx(byte* in)
+int CPU::inx()
 {
     X += 1;
     zeroFlag = X;
@@ -962,7 +969,7 @@ int CPU::inx(byte* in)
     return 2;
 }
 
-int CPU::iny(byte* in)
+int CPU::iny()
 {
     Y += 1;
     zeroFlag = Y;
@@ -970,20 +977,20 @@ int CPU::iny(byte* in)
     return 2;
 }
 
-int CPU::jmpa(byte* in)
+int CPU::jmpa()
 {
     //set PC to absolute address
     PC = absolute(in) -1;
     return 3;
 }
 
-int CPU::jmpi(byte* in)
+int CPU::jmpi()
 {
     PC = indirect(in) -1;
     return 5;
 }
 
-int CPU::jsr(byte* in)
+int CPU::jsr()
 {
     push((PC >> 8) & 0xFF);
     push((PC & 0xFF));
@@ -991,7 +998,7 @@ int CPU::jsr(byte* in)
     return 6;
 }
 
-int CPU::ldai(byte* in)
+int CPU::ldai()
 {
     A = *in;
     signFlag = (A >> 7)&1;
@@ -999,7 +1006,7 @@ int CPU::ldai(byte* in)
     return 2;
 }
 
-int CPU::ldaz(byte* in)
+int CPU::ldaz()
 {
     A = cpuMem->loadByte(*in);
     signFlag = (A >> 7) &1;
@@ -1007,7 +1014,7 @@ int CPU::ldaz(byte* in)
     return 3;
 }
 
-int CPU::ldazx(byte* in)
+int CPU::ldazx()
 {
     A = cpuMem->loadByte(zeroPageX(in));
     signFlag = (A >> 7) &1;
@@ -1015,7 +1022,7 @@ int CPU::ldazx(byte* in)
     return 4;
 }
 
-int CPU::ldaa(byte* in)
+int CPU::ldaa()
 {
     A = cpuMem->loadByte(absolute(in));
     signFlag = (A >> 7) &1;
@@ -1023,7 +1030,7 @@ int CPU::ldaa(byte* in)
     return 4;
 }
 
-int CPU::ldaax(byte* in)
+int CPU::ldaax()
 {
     A = cpuMem->loadByte(absoluteX(in));
     signFlag = (A >> 7) &1;
@@ -1031,7 +1038,7 @@ int CPU::ldaax(byte* in)
     return 4; //could be +1
 }
 
-int CPU::ldaay(byte* in)
+int CPU::ldaay()
 {
     A = cpuMem->loadByte(absoluteY(in));
     signFlag = (A >> 7) &1;
@@ -1039,7 +1046,7 @@ int CPU::ldaay(byte* in)
     return 4; //could be + 1
 }
 
-int CPU::ldaix(byte* in)
+int CPU::ldaix()
 {
     A = cpuMem->loadByte(indexedIndirect(in));
     signFlag = (A >> 7) &1;
@@ -1047,7 +1054,7 @@ int CPU::ldaix(byte* in)
     return 6;
 }
 
-int CPU::ldaiy(byte* in)
+int CPU::ldaiy()
 {
     A = cpuMem->loadByte(indirectIndexed(in));
     signFlag = (A >> 7) &1;
@@ -1055,7 +1062,7 @@ int CPU::ldaiy(byte* in)
     return 5; //could be + 1
 }
 
-int CPU::ldxi(byte* in)
+int CPU::ldxi()
 {
     X = *in;
     signFlag = (A >> 7)&1;
@@ -1063,7 +1070,7 @@ int CPU::ldxi(byte* in)
     return 2;
 }
 
-int CPU::ldxz(byte* in)
+int CPU::ldxz()
 {
     X = cpuMem->loadByte(*in);
     signFlag = (A >> 7) &1;
@@ -1071,7 +1078,7 @@ int CPU::ldxz(byte* in)
     return 3;
 }
 
-int CPU::ldxzy(byte* in)
+int CPU::ldxzy()
 {
     X = cpuMem->loadByte(zeroPageY(in));
     signFlag = (A >> 7) &1;
@@ -1079,7 +1086,7 @@ int CPU::ldxzy(byte* in)
     return 4;
 }
 
-int CPU::ldxa(byte* in)
+int CPU::ldxa()
 {
     X = cpuMem->loadByte(absolute(in));
     signFlag = (A >> 7) &1;
@@ -1087,7 +1094,7 @@ int CPU::ldxa(byte* in)
     return 4;
 }
 
-int CPU::ldxay(byte* in)
+int CPU::ldxay()
 {
     X = cpuMem->loadByte(absoluteY(in));
     signFlag = (A >> 7) &1;
@@ -1095,7 +1102,7 @@ int CPU::ldxay(byte* in)
     return 4; //could be + 1
 }
 
-int CPU::ldyi(byte* in)
+int CPU::ldyi()
 {
     Y = *in;
     signFlag = (A >> 7)&1;
@@ -1103,7 +1110,7 @@ int CPU::ldyi(byte* in)
     return 2;
 }
 
-int CPU::ldyz(byte* in)
+int CPU::ldyz()
 {
     Y = cpuMem->loadByte(*in);
     signFlag = (A >> 7) &1;
@@ -1111,7 +1118,7 @@ int CPU::ldyz(byte* in)
     return 3;
 }
 
-int CPU::ldyzx(byte* in)
+int CPU::ldyzx()
 {
     Y = cpuMem->loadByte(zeroPageX(in));
     signFlag = (A >> 7) &1;
@@ -1119,7 +1126,7 @@ int CPU::ldyzx(byte* in)
     return 4;
 }
 
-int CPU::ldya(byte* in)
+int CPU::ldya()
 {
     Y = cpuMem->loadByte(absolute(in));
     signFlag = (A >> 7) &1;
@@ -1127,7 +1134,7 @@ int CPU::ldya(byte* in)
     return 4;
 }
 
-int CPU::ldyax(byte* in)
+int CPU::ldyax()
 {
     Y = cpuMem->loadByte(absoluteX(in));
     signFlag = (A >> 7) &1;
@@ -1146,31 +1153,31 @@ byte CPU::lsrOp(byte toShift)
     return res;
 }
 
-int CPU::lsrac(byte* in) //accumulator
+int CPU::lsrac() //accumulator
 {
     A = lsrOp(A);
     return 2;
 }
 
-int CPU::lsrz(byte* in)
+int CPU::lsrz()
 {
     cpuMem->writeByte(lsrOp(cpuMem->loadByte(*in)), *in);
     return 5;
 }
 
-int CPU::lsrzx(byte* in)
+int CPU::lsrzx()
 {
     cpuMem->writeByte(lsrOp(cpuMem->loadByte(zeroPageX(in))), zeroPageX(in));
     return 6;
 }
 
-int CPU::lsra(byte* in)
+int CPU::lsra()
 {
     cpuMem->writeByte(lsrOp(cpuMem->loadByte(absolute(in))), absolute(in));
     return 6;
 }
 
-int CPU::lsrax(byte* in)
+int CPU::lsrax()
 {
     cpuMem->writeByte(lsrOp(cpuMem->loadByte(absoluteX(in))), absoluteX(in));
     return 7;
@@ -1188,37 +1195,37 @@ byte CPU::rolOp(byte toShift)
     return res;
 }
 
-int CPU::rolac(byte* in) //accumulator
+int CPU::rolac() //accumulator
 {
     A = rolOp(A);
     return 2;
 }
 
-int CPU::rolz(byte* in)
+int CPU::rolz()
 {
     cpuMem->writeByte(rolOp(cpuMem->loadByte(*in)), *in);
     return 5;
 }
 
-int CPU::rolzx(byte* in)
+int CPU::rolzx()
 {
     cpuMem->writeByte(rolOp(cpuMem->loadByte(zeroPageX(in))), zeroPageX(in));
     return 6;
 }
 
-int CPU::rola(byte* in)
+int CPU::rola()
 {
     cpuMem->writeByte(rolOp(cpuMem->loadByte(absolute(in))), absolute(in));
     return 6;
 }
 
-int CPU::rolax(byte* in)
+int CPU::rolax()
 {
     cpuMem->writeByte(rolOp(cpuMem->loadByte(absoluteX(in))), absoluteX(in));
     return 7;
 }
 
-int CPU::nop(byte* in)
+int CPU::nop()
 {
     //Oh, it's a nop
     return 2;
@@ -1235,74 +1242,74 @@ byte CPU::oraOp(byte toOra)
 
 }
 
-int CPU::orai(byte* in)
+int CPU::orai()
 {
     A = oraOp((*in));
     return 2;
 }
 
-int CPU::oraz(byte* in)
+int CPU::oraz()
 {
     A = oraOp(cpuMem->loadByte((*in)));
     return 3;
 }
 
-int CPU::orazx(byte* in)
+int CPU::orazx()
 {
     byte res = cpuMem->loadByte(zeroPageX(in));
     A = oraOp(res);
     return 4;
 }
 
-int CPU::oraa(byte* in)
+int CPU::oraa()
 {
     byte res = cpuMem->loadByte(absolute(in));
     A = oraOp(res);
     return 4;
 }
 
-int CPU::oraax(byte* in)
+int CPU::oraax()
 {
     byte res = cpuMem->loadByte(absoluteX(in));
     A = oraOp(res);
     return 4; //could be + 1
 }
 
-int CPU::oraay(byte* in)
+int CPU::oraay()
 {
     byte res = cpuMem->loadByte(absoluteY(in));
     A = oraOp(res);
     return 4; //could be + 1
 }
 
-int CPU::oraix(byte* in)
+int CPU::oraix()
 {
     byte res = cpuMem->loadByte(indexedIndirect(in));
     A = oraOp(res);
     return 6;
 }
 
-int CPU::oraiy(byte* in)
+int CPU::oraiy()
 {
     byte res = cpuMem->loadByte(indirectIndexed(in));
     A = oraOp(res);
     return 5; //could be + 1
 }
 
-int CPU::pha(byte* in)
+int CPU::pha()
 {
     push(A);
     return 3;
 }
 
-int CPU::php(byte* in)
+int CPU::php()
 {
     updateFlagReg();
     push(ST);
     return 3;
 }
 
-int CPU::pla(byte* in)
+int CPU::pla()
 {
     A = pull();
     signFlag = (A >> 7)&1;
@@ -1310,7 +1317,7 @@ int CPU::pla(byte* in)
     return 4;
 }
 
-int CPU::plp(byte* in)
+int CPU::plp()
 {
     updateFlagReg();
     ST = pull();
@@ -1331,37 +1338,37 @@ byte CPU::rorOp(byte toShift)
     return res;
 }
 
-int CPU::rorac(byte* in) //accumulator
+int CPU::rorac() //accumulator
 {
     A = rorOp(A);
     return 2;
 }
 
-int CPU::rorz(byte* in)
+int CPU::rorz()
 {
     cpuMem->writeByte(rorOp(cpuMem->loadByte(*in)), *in);
     return 5;
 }
 
-int CPU::rorzx(byte* in)
+int CPU::rorzx()
 {
     cpuMem->writeByte(rorOp(cpuMem->loadByte(zeroPageX(in))), zeroPageX(in));
     return 6;
 }
 
-int CPU::rora(byte* in)
+int CPU::rora()
 {
     cpuMem->writeByte(rorOp(cpuMem->loadByte(absolute(in))), absolute(in));
     return 6;
 }
 
-int CPU::rorax(byte* in)
+int CPU::rorax()
 {
     cpuMem->writeByte(rorOp(cpuMem->loadByte(absoluteX(in))), absoluteX(in));
     return 7;
 }
 
-int CPU::rti(byte* in)
+int CPU::rti()
 {
     //return from function
     byte tmp = pull();
@@ -1376,7 +1383,7 @@ int CPU::rti(byte* in)
     return 6;
 }
 
-int CPU::rts(byte* in)
+int CPU::rts()
 {
     //returning from subroutine
     PC = pull();
@@ -1397,48 +1404,48 @@ byte CPU::sbcOp(byte toAdd)
     return (byte)res;
 }
 
-int CPU::sbci(byte* in)
+int CPU::sbci()
 {
     //add with carry immediate
     A = (addCOp(*in) & 0xFF);
     return 2;
 }
 
-int CPU::sbcz(byte* in)
+int CPU::sbcz()
 {
     A = (addCOp(cpuMem->loadByte(*in)) & 0xFF);
     return 3;
 }
 
-int CPU::sbczx(byte* in)
+int CPU::sbczx()
 {
     byte val = cpuMem->loadByte(zeroPageX(in));
     A = (addCOp(val) & 0xFF);
     return 4;
 }
 
-int CPU::sbca(byte* in)
+int CPU::sbca()
 {
     byte val = cpuMem->loadByte(absolute(in));
     A = (addCOp(val) & 0xFF);
     return 4;
 }
 
-int CPU::sbcax(byte* in)
+int CPU::sbcax()
 {
     byte val = cpuMem->loadByte(absoluteX(in));
     A = (addCOp(val) & 0xFF);
     return 4;   //could be +1
 }
 
-int CPU::sbcay(byte* in)
+int CPU::sbcay()
 {
     byte val = cpuMem->loadByte(absoluteY(in));
     A = (addCOp(val) & 0xFF);
     return 4;   //could be +1
 }
 
-int CPU::sbcix(byte* in)
+int CPU::sbcix()
 {
     byte val = cpuMem->loadByte(indexedIndirect(in));
     A = (addCOp(val) & 0xFF);
@@ -1446,109 +1453,109 @@ int CPU::sbcix(byte* in)
 }
 
 
-int CPU::sbciy(byte* in)
+int CPU::sbciy()
 {
     byte val = cpuMem->loadByte(indirectIndexed(in));
     A = (addCOp(val) & 0xFF);
     return 5; //could be + 1
 }
 
-int CPU::sec(byte* in)
+int CPU::sec()
 {
     carryFlag = 1;
     return 2;
 }
 
-int CPU::sed(byte* in)
+int CPU::sed()
 {
     decFlag = 1;
     return 2;
 }
 
-int CPU::sei(byte* in)
+int CPU::sei()
 {
     intFlag = 1;
     return 2;
 }
 
-int CPU::staz(byte* in)
+int CPU::staz()
 {
     cpuMem->writeByte(A, *in);
     return 3;
 }
 
-int CPU::stazx(byte* in)
+int CPU::stazx()
 {
     cpuMem->writeByte(A, zeroPageX(in));
     return 4;
 }
 
-int CPU::staa(byte* in)
+int CPU::staa()
 {
     cpuMem->writeByte(A, absolute(in));
     return 4;
 }
 
-int CPU::staax(byte* in)
+int CPU::staax()
 {
     cpuMem->writeByte(A, absoluteX(in));
     return 4;
 }
 
-int CPU::staay(byte* in)
+int CPU::staay()
 {
     cpuMem->writeByte(A, absoluteY(in));
     return 4;
 }
 
-int CPU::staix(byte* in)
+int CPU::staix()
 {
     cpuMem->writeByte(A, cpuMem->loadWord(indexedIndirect(in)));
     return 6;
 }
 
-int CPU::staiy(byte* in)
+int CPU::staiy()
 {
     cpuMem->writeByte(A, cpuMem->loadWord(indirectIndexed(in)));
     return 6;
 }
 
-int CPU::stxz(byte* in)
+int CPU::stxz()
 {
     cpuMem->writeByte(X, *in);
     return 3;
 }
 
-int CPU::stxzy(byte* in)
+int CPU::stxzy()
 {
     cpuMem->writeByte(X, zeroPageY(in));
 }
 
-int CPU::stxa(byte* in)
+int CPU::stxa()
 {
     cpuMem->writeByte(X, absolute(in));
     return 4;
 }
 
-int CPU::styz(byte* in)
+int CPU::styz()
 {
     cpuMem->writeByte(Y, *in);
     return 3;
 }
 
-int CPU::styzx(byte* in)
+int CPU::styzx()
 {
     cpuMem->writeByte(Y, zeroPageX(in));
     return 4;
 }
 
-int CPU::stya(byte* in)
+int CPU::stya()
 {
     cpuMem->writeByte(Y, absolute(in));
     return 4;
 }
 
-int CPU::tax(byte* in)
+int CPU::tax()
 {
     X = A;
     signFlag = (A >> 7) & 1;
@@ -1556,7 +1563,7 @@ int CPU::tax(byte* in)
     return 2;
 }
 
-int CPU::tay(byte* in)
+int CPU::tay()
 {
     Y = A;
     signFlag = (A >> 7) & 1;
@@ -1564,7 +1571,7 @@ int CPU::tay(byte* in)
     return 2;
 }
 
-int CPU::tsx(byte* in)
+int CPU::tsx()
 {
     X = SP; //stack pointer register
     signFlag = (SP >> 7) & 1;
@@ -1572,7 +1579,7 @@ int CPU::tsx(byte* in)
     return 2;
 }
 
-int CPU::txa(byte* in)
+int CPU::txa()
 {
     A = X;
     signFlag = (X >> 7) & 1;
@@ -1580,7 +1587,7 @@ int CPU::txa(byte* in)
     return 2;
 }
 
-int CPU::txs(byte* in)
+int CPU::txs()
 {
     SP = X;
     signFlag = (X >> 7) & 1;
@@ -1588,7 +1595,7 @@ int CPU::txs(byte* in)
     return 2;
 }
 
-int CPU::tya(byte* in)
+int CPU::tya()
 {
     A = Y;
     signFlag = (Y >> 7) & 1;

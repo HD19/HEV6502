@@ -1,5 +1,10 @@
 #include "assembler.h"
 
+bool contains(string& toCheck, char target)
+{
+    return !(toCheck.find(target) == string::npos);
+}
+
 string StringToUpper(string strToConvert)
 {
     std::transform(strToConvert.begin(), strToConvert.end(), strToConvert.begin(), ::toupper);
@@ -36,30 +41,40 @@ short extractValue(string toExtract)
     stringstream ss;
     short value = -1;
     
-    if(curString[0] == '$') //hex value
+    if(toExtract[0] == '$') //hex value
     {
-        ss << hex << curString.substr(2, curString.length()-1);
+        ss << hex << toExtract.substr(2, toExtract.length()-1);
         ss >> value;
     }
     else
     {
-       ss << curString.substr(1, curString.length()-1);
+       ss << toExtract.substr(1, toExtract.length()-1);
        ss >> value;
     }
     return value;
     
 }
 
-short getLabel(string toCheck)
+sbyte Assembler::calculateBranch(short addr, short branchAddr)
+{
+    //branch is after us, need to jump forward
+    if(branchAddr - addr > 0xFF)
+    {
+        errorStack.push("Branch target is out of range!");
+        return branchAddr - addr;
+    }
+}
+
+short Assembler::getLabel(string toCheck)
 {
     map<string, short>::iterator it;
-    tmp = StringToUpper(toCheck);
+    string tmp = StringToUpper(toCheck);
     if(isdigit(toCheck[0]))
         return -1;  //No numeric labels, damnit 
     
     it = labelMap.find(tmp);
     if(it != labelMap.end())
-        return (it->second)
+        return (it->second);
         
     return -1;
 }
@@ -101,27 +116,67 @@ void Assembler::setEntry(byte opCode, byte addrMode, string inst)
     return;
 }
 
-bool Assembler::createLabel(string label, short addr)
+bool Assembler::createLabel(string label)
 {
     if(getLabel(label) > 0)
     {
-        errorStack.push_back("Label " + label + " already exists, not redefining");
+        errorStack.push("Label " + label + " already exists, not redefining");
         return false;
     }
     
-    labelMap[label] = addr; //Where the code should start, could be -1 if unresolved.   
+    labelMap[label] = currentPC; //Where the code should start, could be -1 if unresolved.
     return true; 
 }
 
-bool isInstruction(string& toCheck)
+bool Assembler::isInstruction(string& toCheck)
 {
     string tmp = StringToUpper(toCheck);
     
-    map<string, short>::iterator it = opTable.find(tmp);
+    map<string, byte*>::iterator it = opTable.find(tmp);
     if(it == opTable.end())
         return false;
     
     return true;
+}
+
+int Assembler::resolveLabels()
+{
+    map<string, short>::iterator it;
+    string curKey;
+
+
+    for(it = unresolvedLabelMap.begin(); it != unresolvedLabelMap.end(); ++it)
+    {
+        curKey = (it->first);
+        short targetAddr = (it->second);
+        short tmpAddr = getLabel(curKey);
+
+        if(tmpAddr == -1)
+        {
+            errorStack.push("Couldn't resolve unknown label: " + curKey);
+            return -1;
+        }
+        byte high = (tmpAddr >> 8) & 0xFF;
+        byte low = (tmpAddr) & 0xFF;
+        currentCode[++targetAddr] = high;   //IN PLACE CODE EDITING
+        currentCode[++targetAddr] = low;
+    }
+
+    for(it == unresolvedBranchMap.begin(); it != unresolvedBranchMap.end(); ++it)
+    {
+        curKey = (it->first);
+        short targetBranch = (it->second);
+        short tmpAddr = getLabel(curKey);
+
+        if(tmpAddr == -1)
+        {
+            errorStack.push("Could resolve unknown label " + curKey + " for branch!");
+            return -1;
+        }
+        byte branch = calculateBranch(targetBranch, tmpAddr);
+        currentCode[++targetBranch] = branch;
+    }
+    return 0;
 }
 
 //return bytes generated
@@ -139,10 +194,16 @@ int Assembler::decodeLine(string toDecode)
     if(!tokens.size())
     {
         //we didn't get anything
-        errorStack.push_back("Couldn't tokenize given line!");
+        errorStack.push("Couldn't tokenize given line!");
         return -1;
     }
-    
+
+    if(curString[0] == ';')
+    {
+        //we have a comment, ignore the rest.
+        return 0;
+    }
+
     if(curString[curString.length()-1] == ':')
     {
         //we're defining a label
@@ -161,7 +222,7 @@ int Assembler::decodeLine(string toDecode)
     
     if(!isInstruction(curString))
     {
-        errorStack.push_back("Didn't recognize " + curString + " as an instruction!");
+        errorStack.push("Didn't recognize " + curString + " as an instruction!");
         //we don't have an instruction
         //so panic
         return -1;
@@ -173,7 +234,7 @@ int Assembler::decodeLine(string toDecode)
     if((lastToken - currentToken))
     {
         currentToken++;
-        curString = tokens[currentToken]
+        curString = tokens[currentToken];
     }
     else
     {
@@ -181,20 +242,24 @@ int Assembler::decodeLine(string toDecode)
         addrMode = IMP;
         if(!opCodes[IMP])
         {
-            errorStack.push_back("Illegal address mode IMP for " + opStr);
+            errorStack.push("Illegal address mode IMP for " + opStr);
             return -1;
         }
         currentCode.push_back(opCodes[IMP]); //push back the instruction
         return 1;
     }
-    
+    if(curString[0] == ';')
+    {
+        //we have a comment
+        return 0;
+    }
     //we have an operand
     if(curString[0] == 'A')
     {
         //accumulator
         if(!opCodes[IMP])
         {
-            errorStack.push_back("Illegal address mode ACC for " + opStr);
+            errorStack.push("Illegal address mode ACC for " + opStr);
             return -1;
         }
         currentCode.push_back(opCodes[IMP]); 
@@ -203,34 +268,233 @@ int Assembler::decodeLine(string toDecode)
     if(curString[0] == '#')
     {
         curString = curString.substr(1);
-        //immediate
+        //immediatelithium-0.10
         byte value;
         
-        if(!opcodes[IMM] && curString.length() > 1)
+        if(!opCodes[IMM] && curString.length() > 1)
         {
-            errorStack.push_back("Illegal address mode IMM for " + opStr);
+            errorStack.push("Illegal address mode IMM for " + opStr);
             return -1;
         }
         
-        
-        //could be a label
-        if(isdigit(curString))
+        //could be a label NOT SUPPORTED in this assembler!
+        if(isdigit(curString[0]))
         {
-            value = extractNum(curString);       
+            value = extractValue(curString);
             currentCode.push_back(opCodes[IMM]);
             currentCode.push_back((byte)(value & 0xFF));
             return 2;
         }
     }
-    
+    if(contains(curString, 'X'))
+    {
+        //could be ZPX, ABX or IDX
+        if(contains(curString,'('))
+        {
+            //IDX
+            string tmp = curString.substr(2, 2); //this is assuming $ will always have two digits
+            if(!opCodes[IDX])
+            {
+                errorStack.push("Illegal address mode IDX for " + opStr);
+                return -1;
+            }
+            byte value = (byte)extractValue(tmp) & 0xFF;
+            currentCode.push_back(opCodes[IDX]);
+            currentCode.push_back(value);
+            return 2;
+        }
+        curString = curString.substr(1, curString.find(','));
+        if(curString.length() > 2)
+        {
+            //ABX
+            if(!opCodes[ABX])
+            {
+                errorStack.push("Illegal address mode ABX for " + opStr);
+                return -1;
+            }
+            short value = extractValue(curString);
+            byte high = (value >> 8) & 0xFF;
+            byte low = (value) & 0xFF;
+            currentCode.push_back(opCodes[ABX]);
+            currentCode.push_back(low);
+            currentCode.push_back(high);
+            return 3;
+        }
+        else
+        {
+            //ZPX
+            if(!opCodes[ZPX])
+            {
+                errorStack.push("Illegal address mode ZPX for " + opStr);
+                return -1;
+            }
+            byte value = (byte)extractValue(curString) & 0xFF;
+            currentCode.push_back(opCodes[ZPX]);
+            currentCode.push_back(value);
+            return 2;
+        }
+    }
+    if(contains(curString, 'Y'))
+    {
+        //could be ZPY, ABY or IDY
+        if(contains(curString,'('))
+        {
+            //IDY
+            string tmp = curString.substr(2, 2); //this is assuming $ will always have two digits
+            if(!opCodes[IDY])
+            {
+                errorStack.push("Illegal address mode IDY for " + opStr);
+                return -1;
+            }
+            byte value = (byte)extractValue(tmp) & 0xFF;
+            currentCode.push_back(opCodes[IDY]);
+            currentCode.push_back(value);
+            return 2;
+        }
+        curString = curString.substr(1, curString.find(','));
+        if(curString.length() > 2)
+        {
+            //ABX
+            if(!opCodes[ABY])
+            {
+                errorStack.push("Illegal address mode ABX for " + opStr);
+                return -1;
+            }
+            short value = extractValue(curString);
+            byte high = (value >> 8) & 0xFF;
+            byte low = (value) & 0xFF;
+            currentCode.push_back(opCodes[ABY]);
+            currentCode.push_back(low);
+            currentCode.push_back(high);
+            return 3;
+        }
+        else
+        {
+            //ZPX
+            if(!opCodes[ZPY])
+            {
+                errorStack.push("Illegal address mode ZPX for " + opStr);
+                return -1;
+            }
+            byte value = (byte)extractValue(curString) & 0xFF;
+            currentCode.push_back(opCodes[ZPY]);
+            currentCode.push_back(value);
+            return 2;
+        }
+    }
+    //No X, nor Y. could be ZP IND ABS REL
+    if(contains(curString, '(') && contains(curString, ')'))
+    {
+        //need them both! IND
+        if(!opCodes[IND])
+        {
+            errorStack.push("Illegal address mdoe IND for " + opStr);
+            return -1;
+        }
+        string tmp = curString.substr(1, curString.find(')'));
+        short value = -1;
+        if(!isdigit(tmp[0]))
+        {
+            //we have a label
+            value = getLabel(tmp);
+            if(value == -1)
+            {
+                //we don't have an address for that label yet!
+                unresolvedLabelMap[tmp] = currentPC; //store it's result for later resolution
+            }
+        }
+        else
+        {
+            value = extractValue(tmp);
+        }
+        byte high = (value >> 8) & 0xFF;
+        byte low  = (value & 0xFF);
+        currentCode.push_back(opCodes[IND]);
+        currentCode.push_back(low);
+        currentCode.push_back(high);
+        return 3;
+    }
+    //Not IND
+    if(curString.length() > 3 && curString[0] == '$')
+    {
+        //string is $xxxx
+        //ABS
+        if(!opCodes[ABS])
+        {
+            errorStack.push("Illegal address mode ABS for " + opStr);
+            return -1;
+        }
+
+        short value = extractValue(curString);
+        byte high = (value >> 8) & 0xFF;
+        byte low = (value & 0xFF);
+        currentCode.push_back(opCodes[ABS]);
+        currentCode.push_back(low);
+        currentCode.push_back(high);
+        return 3;
+    }
+    if(curString.length() == 3 && curString[0] == '$')
+    {
+        //string is $xx
+        //ZP
+        if(!opCodes[ZP])
+        {
+            errorStack.push("Illegal address mode ZP for " + opStr);
+            return -1;
+        }
+
+        byte value = (byte)extractValue(curString) & 0xFF;
+        currentCode.push_back(opCodes[ZP]);
+        currentCode.push_back(value);
+        return 2;
+    }
+    //Could only be a label, assuming relative!
+    if(!opCodes[REL])
+    {
+        errorStack.push("Illegal address mode REL for " + opStr);
+        return -1;
+    }
+    short tmpAddr = getLabel(curString);
+    if(tmpAddr == -1)
+    {
+        //label doesn't exist yet, need to resolve as branch later
+        unresolvedBranchMap[curString] = currentPC;
+    }
+    sbyte value = calculateBranch(currentPC, tmpAddr);
+    currentCode.push_back(opCodes[REL]);
+    currentCode.push_back(value);
+    return 2;
 }
 
 int Assembler::assemble()
 {
+    int tmpRes = 0;
     //main logic goes here
+    if(inputBuffer == "")
+    {
+        errorStack.push("No code to assemble!");
+        return -1;
+    }
+
+    vector<string> lines = SplitString(inputBuffer, "\n");
+    for(int i = 0; i < lines.size(); i++)
+    {
+        tmpRes = decodeLine(lines[i]);
+        if(tmpRes == -1)
+            return -1; //Failed to assemble, check the errorStack for error list
+        else
+            currentPC += tmpRes; //tmp res is how many bytes were written
+    }
+    //When that's done, hopefully without error, resolve branches.
+    tmpRes = resolveLabels();
+    if(tmpRes == -1)    //we failed!
+        return -1;
+    outputBlock = currentCode.data();
+    return currentCode.size();
+
 }
 
-void Assembler::setText(string* text)
+void Assembler::setText(string text)
 {
     inputBuffer = text;   
 }
