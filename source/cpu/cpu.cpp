@@ -254,6 +254,7 @@ bool CPU::loadJumpTable()
 int CPU::execute()
 {
     //PC == current opcode, call the function at the jump table.
+
 }
 
 short CPU::relative(byte* in)
