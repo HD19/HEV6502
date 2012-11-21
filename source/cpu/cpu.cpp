@@ -252,13 +252,29 @@ int CPU::execute()
 {
     //PC == current opcode, call the function at the jump table.
     int res = 0;
+    int cycles = 0;
     byte tmp = 0;
-    while(res != -1) //while we haven't been ordered to HALT
+    while(res != -1 && PC != 0xFFFF) //while we haven't been ordered to HALT
     {
         tmp = cpuMem->loadByte(PC);
         ++PC;
-        (this->*opTable[tmp])(); //calling necessary function;
+        res = (this->*opTable[tmp])(); //calling necessary function;
+        cycles += res;
     }
+    return cycles;
+}
+
+int CPU::step()
+{
+    if(PC == 0xFFFF)
+        return -1; //we're at the end of execution
+    //we're just executing one instruction
+    int cycles = 0;
+    byte tmp = 0;
+    tmp = cpuMem->loadByte(PC);
+    ++PC;
+    cycles += (this->*opTable[tmp])(); //call the function and wait
+    return cycles;
 }
 
 short CPU::relative()

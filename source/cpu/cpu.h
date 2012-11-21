@@ -19,12 +19,13 @@
 class MemoryController
 {
 public:
-    virtual ~MemoryController();
-    virtual short loadWord(short address);
-    virtual byte  loadByte(short address);
-    virtual bool  writeWord(short toStore, short address);
-    virtual bool  writeByte(byte toStore, short address);
-    virtual short getStartAddr();
+    //virtual ~MemoryController();
+    virtual short loadWord(short address) = 0;
+    virtual byte  loadByte(short address) = 0;
+    virtual void  writeWord(short toStore, short address) = 0;
+    virtual void  writeByte(byte toStore, short address) = 0;
+    virtual short getStartAddr() = 0;
+    virtual void  loadProgram(short startAddress, byte* toLoad, int size) = 0;
 };
 
 
@@ -315,6 +316,7 @@ class CPU
        FuncPtr opTable[256];
 
        int execute();
+       int step();
 
  };
 #endif
