@@ -63,6 +63,7 @@ sbyte Assembler::calculateBranch(short addr, short branchAddr)
         errorStack.push("Branch target is out of range!");
         return branchAddr - addr;
     }
+    return branchAddr-addr;
 }
 
 short Assembler::getLabel(string toCheck)
@@ -188,7 +189,7 @@ int Assembler::decodeLine(string toDecode)
     string& curString = tokens[0];
     byte currentToken = 0;
     byte lastToken = tokens.size();
-    byte addrMode = -1;
+    //byte addrMode = -1;
     byte* opCodes = NULL;
     
     if(!tokens.size())
@@ -239,7 +240,7 @@ int Assembler::decodeLine(string toDecode)
     else
     {
         //implied instruction
-        addrMode = IMP;
+        //addrMode = IMP;
         if(!opCodes[IMP])
         {
             errorStack.push("Illegal address mode IMP for " + opStr);
@@ -477,7 +478,7 @@ int Assembler::assemble()
     }
 
     vector<string> lines = SplitString(inputBuffer, "\n");
-    for(int i = 0; i < lines.size(); i++)
+    for(unsigned int i = 0; i < lines.size(); i++)
     {
         tmpRes = decodeLine(lines[i]);
         if(tmpRes == -1)
@@ -504,7 +505,7 @@ byte* Assembler::getBinary()
     return outputBlock;
 }
 
-void Assembler::setOffset(short offSet)
+void Assembler::setOffset(short offset)
 {
     this->offset = offset;
 }
