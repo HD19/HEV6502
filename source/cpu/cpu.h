@@ -6,7 +6,7 @@
 #ifndef CPU_H
 #define CPU_H
 
-#define byte char
+#define byte unsigned char
 
 #define FLAG_CARRY 1 << 0 //Cary flag, used if a borrowed is required in subtraction, also used in shift and rotates
 #define FLAG_ZERO  1 << 1 //Zero flag, if op result is 0
@@ -33,7 +33,7 @@ class CPU
   private:
     CPU(MemoryController *memory);
     ~CPU();
-    bool loadJumpTable();
+    void loadJumpTable();
        byte X; // X register
        byte Y; // Y register
        byte A; // Accumulator
@@ -59,259 +59,259 @@ class CPU
        byte pull();
 
        /* Addressing Modes */
-       short relative(byte* in);
-       short zeroPageX(byte* in);
-       short zeroPageY(byte* in);
-       short absolute(byte* in);
-       short absoluteX(byte* in);
-       short absoluteY(byte* in);
-       short indirect(byte* in);
-       short indexedIndirect(byte* in);
-       short indirectIndexed(byte* in);
+       short relative();
+       short zeroPageX();
+       short zeroPageY();
+       short absolute();
+       short absoluteX();
+       short absoluteY();
+       short indirect();
+       short indexedIndirect();
+       short indirectIndexed();
 
        /* ADC */
        byte addCOp(byte toAdD);
-       int adci(byte* in);
-       int adcz(byte* in);
-       int adczx(byte* in);
-       int adca(byte* in);
-       int adcax(byte* in);
-       int adcay(byte* in);
-       int adcix(byte* in);
-       int adciy(byte* in);
+       int adci();
+       int adcz();
+       int adczx();
+       int adca();
+       int adcax();
+       int adcay();
+       int adcix();
+       int adciy();
        
        /* AND */
        byte andOp(byte toAnd);
-       int andi(byte* in);
-       int andz(byte* in);
-       int andzx(byte* in);
-       int anda(byte* in);
-       int andax(byte* in);
-       int anday(byte* in);
-       int andix(byte* in);
-       int andiy(byte* in);
+       int andi();
+       int andz();
+       int andzx();
+       int anda();
+       int andax();
+       int anday();
+       int andix();
+       int andiy();
        
        /* ASL */
        byte aslOp(byte toShift);
-       int aslac(byte* in);
-       int aslz(byte* in);
-       int aslzx(byte* in);
-       int asla(byte* in);
-       int aslax(byte* in);
+       int aslac();
+       int aslz();
+       int aslzx();
+       int asla();
+       int aslax();
 
        /* Bxx */
-       int bcc(byte *in);
-       int bcs(byte *in);
-       int beq(byte *in);
-       int bitz(byte *in);
-       int bita(byte *in);
-       int bmi(byte* in);
-       int bne(byte* in);
-       int bpl(byte* in);
-       int brk(byte* in);
-       int bvc(byte* in);
-       int bvs(byte* in);
+       int bcc();
+       int bcs();
+       int beq();
+       int bitz();
+       int bita();
+       int bmi();
+       int bne();
+       int bpl();
+       int brk();
+       int bvc();
+       int bvs();
 
        /* CLx */
-       int clc(byte* in);
-       int cld(byte* in);
-       int cli(byte* in);
-       int clv(byte* in);
+       int clc();
+       int cld();
+       int cli();
+       int clv();
 
        /* CMP */
        byte cmpOp(byte toComp);
-       int cmpi(byte* in);
-       int cmpz(byte* in);
-       int cmpzx(byte* in);
-       int cmpa(byte* in);
-       int cmpax(byte* in);
-       int cmpay(byte* in);
-       int cmpix(byte* in);
-       int cmpiy(byte* in);
+       int cmpi();
+       int cmpz();
+       int cmpzx();
+       int cmpa();
+       int cmpax();
+       int cmpay();
+       int cmpix();
+       int cmpiy();
 
        /* CPX */
        byte cpxOp(byte toComp);
-       int cpxi(byte* in);
-       int cpxz(byte* in);
-       int cpxa(byte* in);
+       int cpxi();
+       int cpxz();
+       int cpxa();
 
        /* CPY */
        byte cpyOp(byte toComp);
-       int cpyi(byte* in);
-       int cpyz(byte* in);
-       int cpya(byte* in);
+       int cpyi();
+       int cpyz();
+       int cpya();
 
        /* DEC */
        byte decOp(byte toDec);
-       int decz(byte* in);
-       int deczx(byte* in);
-       int deca(byte* in);
-       int decax(byte* in);
+       int decz();
+       int deczx();
+       int deca();
+       int decax();
 
-       int dex(byte* in);
-       int dey(byte* in);
+       int dex();
+       int dey();
 
        /* EOR */
        byte eorOp(byte toOr);
-       int eori(byte* in);
-       int eorz(byte* in);
-       int eorzx(byte* in);
-       int eora(byte* in);
-       int eorax(byte* in);
-       int eoray(byte* in);
-       int eorix(byte* in);
-       int eoriy(byte* in);
+       int eori();
+       int eorz();
+       int eorzx();
+       int eora();
+       int eorax();
+       int eoray();
+       int eorix();
+       int eoriy();
 
        /* INC */
        byte incOp(byte toinc);
-       int incz(byte* in);
-       int inczx(byte* in);
-       int inca(byte* in);
-       int incax(byte* in);
+       int incz();
+       int inczx();
+       int inca();
+       int incax();
 
-       int inx(byte* in);
-       int iny(byte* in);
+       int inx();
+       int iny();
 
        /* JMP */
-       int jmpa(byte* in);
-       int jmpi(byte* in);
+       int jmpa();
+       int jmpi();
 
-       int jsr(byte* in);
+       int jsr();
 
        /* LDA */
        byte ldaOp(byte toOr);
-       int ldai(byte* in);
-       int ldaz(byte* in);
-       int ldazx(byte* in);
-       int ldaa(byte* in);
-       int ldaax(byte* in);
-       int ldaay(byte* in);
-       int ldaix(byte* in);
-       int ldaiy(byte* in);
+       int ldai();
+       int ldaz();
+       int ldazx();
+       int ldaa();
+       int ldaax();
+       int ldaay();
+       int ldaix();
+       int ldaiy();
 
        /* LDX */
        byte ldxOp(byte toOr);
-       int ldxi(byte* in);
-       int ldxz(byte* in);
-       int ldxzy(byte* in);
-       int ldxa(byte* in);
-       int ldxax(byte* in);
-       int ldxay(byte* in);
+       int ldxi();
+       int ldxz();
+       int ldxzy();
+       int ldxa();
+       int ldxax();
+       int ldxay();
 
        /* LDY */
        byte ldyOp(byte toOr);
-       int ldyi(byte* in);
-       int ldyz(byte* in);
-       int ldyzx(byte* in);
-       int ldya(byte* in);
-       int ldyax(byte* in);
+       int ldyi();
+       int ldyz();
+       int ldyzx();
+       int ldya();
+       int ldyax();
 
        /* LSR */
        byte lsrOp(byte toOr);
-       int lsrac(byte* in);
-       int lsrz(byte* in);
-       int lsrzx(byte* in);
-       int lsra(byte* in);
-       int lsrax(byte* in);
+       int lsrac();
+       int lsrz();
+       int lsrzx();
+       int lsra();
+       int lsrax();
 
        /* NOP */
-       int nop(byte* in);
+       int nop();
 
        /* ORA */
        byte oraOp(byte toOra);
-       int orai(byte* in);
-       int oraz(byte* in);
-       int orazx(byte* in);
-       int oraa(byte* in);
-       int oraax(byte* in);
-       int oraay(byte* in);
-       int oraix(byte* in);
-       int oraiy(byte* in);
+       int orai();
+       int oraz();
+       int orazx();
+       int oraa();
+       int oraax();
+       int oraay();
+       int oraix();
+       int oraiy();
 
        /* PHA */
-       int pha(byte* in);
+       int pha();
 
        /* PHP */
-       int php(byte* in);
+       int php();
 
        /* PLA */
-       int pla(byte* in);
+       int pla();
 
        /* PLP */
-       int plp(byte *in);
+       int plp();
 
        /* ROL */
        byte rolOp(byte toRol);
-       int rolac(byte* in);
-       int rolz(byte* in);
-       int rolzx(byte* in);
-       int rola(byte* in);
-       int rolax(byte* in);
+       int rolac();
+       int rolz();
+       int rolzx();
+       int rola();
+       int rolax();
 
        /* ROR */
        byte rorOp(byte toRor);
-       int rorac(byte* in);
-       int rorz(byte* in);
-       int rorzx(byte* in);
-       int rora(byte* in);
-       int rorax(byte* in);
+       int rorac();
+       int rorz();
+       int rorzx();
+       int rora();
+       int rorax();
 
        /* RTI */
-       int rti(byte* in);
+       int rti();
 
        /* RTS */
-       int rts(byte* in);
+       int rts();
 
        /* SBC */
        byte sbcOp(byte toAdD);
-       int sbci(byte* in);
-       int sbcz(byte* in);
-       int sbczx(byte* in);
-       int sbca(byte* in);
-       int sbcax(byte* in);
-       int sbcay(byte* in);
-       int sbcix(byte* in);
-       int sbciy(byte* in);
+       int sbci();
+       int sbcz();
+       int sbczx();
+       int sbca();
+       int sbcax();
+       int sbcay();
+       int sbcix();
+       int sbciy();
 
        /* SEC */
-       int sec(byte* in);
+       int sec();
 
        /* SED */
-       int sed(byte* in);
+       int sed();
 
        /* SEI */
-       int sei(byte* in);
+       int sei();
 
        /* STA */
-       int staz(byte* in);
-       int stazx(byte* in);
-       int staa(byte* in);
-       int staax(byte* in);
-       int staay(byte* in);
-       int staix(byte* in);
-       int staiy(byte* in);
+       int staz();
+       int stazx();
+       int staa();
+       int staax();
+       int staay();
+       int staix();
+       int staiy();
 
        /* STX */
-       int stxz(byte* in);
-       int stxzy(byte* in);
-       int stxa(byte* in);
+       int stxz();
+       int stxzy();
+       int stxa();
 
        /* STY */
-       int styz(byte* in);
-       int styzx(byte* in);
-       int stya(byte* in);
+       int styz();
+       int styzx();
+       int stya();
 
-       int tax(byte* in);
-       int tay(byte* in);
-       int tsx(byte* in);
-       int txa(byte* in);
-       int txs(byte* in);
-       int tya(byte* in);
+       int tax();
+       int tay();
+       int tsx();
+       int txa();
+       int txs();
+       int tya();
 
        //Opcode Table
-       //Format will be int opFunc(byte* in))
+       //Format will be int opFunc())
        //Return type is the number of cycles, in is input, out is output that might be needed. 
-       typedef int (CPU::*FuncPtr)(byte*);
+       typedef int (CPU::*FuncPtr)();
        FuncPtr opTable[256];
 
        int execute();
