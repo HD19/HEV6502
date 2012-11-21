@@ -12,12 +12,12 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    ../../NES/HEV6502/source/cpu/cpu.cpp \
-    assembler.cpp
+    ../cpu/cpu.cpp \
+    ../assembler/assembler.cpp
 
 HEADERS  += mainwindow.h \
-    ../../NES/HEV6502/source/cpu/cpu.h \
-    ../../NES/HEV6502/source/common/common.h \
-    assembler.h
+    ../cpu/cpu.h \
+    ../common/common.h \
+    ../assembler/assembler.h
 
 FORMS    += mainwindow.ui
