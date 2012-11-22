@@ -63,7 +63,10 @@ sbyte Assembler::calculateBranch(short addr, short branchAddr)
         errorStack.push("Branch target is out of range!");
         return branchAddr - addr;
     }
-    return branchAddr-addr;
+    if(addr < branchAddr) // branch target is ahead of current PC
+        return branchAddr-addr;
+    else
+        return branchAddr - (addr+2); //branch target is behind, need to account for instruction loading
 }
 
 short Assembler::getLabel(string toCheck)
@@ -120,13 +123,13 @@ void Assembler::setEntry(byte opCode, byte addrMode, string inst)
 
 bool Assembler::createLabel(string label)
 {
-    if(getLabel(label) > 0)
+    string tmp = StringToUpper(label);
+    if(getLabel(tmp) > 0)
     {
         errorStack.push("Label " + label + " already exists, not redefining");
         return false;
     }
-    
-    labelMap[label] = currentPC; //Where the code should start, could be -1 if unresolved.
+    labelMap[tmp] = currentPC; //Where the code should start, could be -1 if unresolved.
     return true; 
 }
 
@@ -172,7 +175,7 @@ int Assembler::resolveLabels()
 
         if(tmpAddr == -1)
         {
-            errorStack.push("Could resolve unknown label " + curKey + " for branch!");
+            errorStack.push("Couldn't resolve unknown label " + curKey + " for branch!");
             return -1;
         }
         byte branch = calculateBranch(targetBranch, tmpAddr);
@@ -210,7 +213,7 @@ int Assembler::decodeLine(string toDecode)
     {
         //we're defining a label
         createLabel(curString.substr(0, curString.length()-1));
-        if((lastToken - currentToken))
+        if((lastToken - (currentToken+1)))
         {
             currentToken++;
             curString = tokens[currentToken];
@@ -233,7 +236,7 @@ int Assembler::decodeLine(string toDecode)
     string opStr = StringToUpper(curString);
     opCodes = opTable.find(opStr)->second;
     
-    if((lastToken - currentToken))
+    if((lastToken - (currentToken+1)))
     {
         currentToken++;
         curString = tokens[currentToken];
@@ -242,7 +245,7 @@ int Assembler::decodeLine(string toDecode)
     {
         //implied instruction
         //addrMode = IMP;
-        if(!opCodes[IMP])
+        if(!opCodes[IMP] && curString != "BRK")
         {
             errorStack.push("Illegal address mode IMP for " + opStr);
             return -1;
@@ -452,8 +455,9 @@ int Assembler::decodeLine(string toDecode)
     short tmpAddr = getLabel(curString);
     if(tmpAddr == -1)
     {
-        //label doesn't exist yet, need to resolve as branch later
-        unresolvedBranchMap[curString] = currentPC;
+        //label doesn't exist yet, need to resolve as branch later, so target will be at a later address.
+        string tmp = StringToUpper(curString);
+        unresolvedBranchMap[tmp] = currentPC;
     }
     sbyte value = calculateBranch(currentPC, tmpAddr);
     currentCode.push_back(opCodes[REL]);
