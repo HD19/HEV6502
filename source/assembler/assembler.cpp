@@ -43,12 +43,12 @@ short extractValue(string toExtract)
     
     if(toExtract[0] == '$') //hex value
     {
-        ss << hex << toExtract.substr(2, toExtract.length()-1);
+        ss << hex << toExtract.substr(1, toExtract.length()-1);
         ss >> value;
     }
     else
     {
-       ss << toExtract.substr(1, toExtract.length()-1);
+       ss << toExtract;
        ss >> value;
     }
     return value;
@@ -111,6 +111,7 @@ void Assembler::setEntry(byte opCode, byte addrMode, string inst)
     else
     {
         byte* tmp = (byte*)malloc(12 * sizeof(byte));
+        bzero(tmp, 12 * sizeof(byte));
         tmp[addrMode] = opCode;
         (opTable[inst]) = tmp;
     }
@@ -163,7 +164,7 @@ int Assembler::resolveLabels()
         currentCode[++targetAddr] = low;
     }
 
-    for(it == unresolvedBranchMap.begin(); it != unresolvedBranchMap.end(); ++it)
+    for(it = unresolvedBranchMap.begin(); it != unresolvedBranchMap.end(); ++it)
     {
         curKey = (it->first);
         short targetBranch = (it->second);
@@ -229,7 +230,7 @@ int Assembler::decodeLine(string toDecode)
         return -1;
     }
     //figure out what the rest of the string is.
-    string opStr = curString;
+    string opStr = StringToUpper(curString);
     opCodes = opTable.find(opStr)->second;
     
     if((lastToken - currentToken))
@@ -249,18 +250,13 @@ int Assembler::decodeLine(string toDecode)
         currentCode.push_back(opCodes[IMP]); //push back the instruction
         return 1;
     }
-    if(curString[0] == ';')
-    {
-        //we have a comment
-        return 0;
-    }
     //we have an operand
-    if(curString[0] == 'A')
+    if(curString[0] == 'A' || curString[0] == ';')
     {
         //accumulator
-        if(!opCodes[IMP])
+        if(!opCodes[IMP] && opStr != "BRK")
         {
-            errorStack.push("Illegal address mode ACC for " + opStr);
+            errorStack.push("Illegal address mode IMP for " + opStr);
             return -1;
         }
         currentCode.push_back(opCodes[IMP]); 
@@ -279,13 +275,11 @@ int Assembler::decodeLine(string toDecode)
         }
         
         //could be a label NOT SUPPORTED in this assembler!
-        if(isdigit(curString[0]))
-        {
-            value = extractValue(curString);
-            currentCode.push_back(opCodes[IMM]);
-            currentCode.push_back((byte)(value & 0xFF));
-            return 2;
-        }
+
+        value = extractValue(curString);
+        currentCode.push_back(opCodes[IMM]);
+        currentCode.push_back((byte)(value & 0xFF));
+        return 2;
     }
     if(contains(curString, 'X'))
     {
@@ -470,6 +464,14 @@ int Assembler::decodeLine(string toDecode)
 int Assembler::assemble()
 {
     int tmpRes = 0;
+    currentPC = 0 + offset;
+    outputBlock = 0;
+    currentCode.clear();
+    labelMap.clear();
+    unresolvedLabelMap.clear();
+    unresolvedBranchMap.clear();
+
+
     //main logic goes here
     if(inputBuffer == "")
     {
@@ -493,6 +495,11 @@ int Assembler::assemble()
     outputBlock = currentCode.data();
     return currentCode.size();
 
+}
+
+stack<string>* Assembler::getErrors()
+{
+    return &errorStack;
 }
 
 void Assembler::setText(string text)

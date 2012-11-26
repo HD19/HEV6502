@@ -6,6 +6,7 @@
 #include <stack>
 #include <algorithm>
 #include <string>
+#include <strings.h>
 #include <sstream>
 #include <stdlib.h>
 #include <ctype.h>
@@ -33,12 +34,13 @@ class Assembler
 {
 public:
     Assembler();            //offset address for labels
-    ~Assembler();
+   // ~Assembler();
     int       assemble();                    //do the magic.
-    void      setText(string toSet);        //set our input buffer
+    void      setText(string toSet);         //set our input buffer
     byte*     getBinary();                   //return code block
-    void      setOffset(short offset);                   //setting the offset for labels.
+    void      setOffset(short offset);       //setting the offset for labels.
     void      outputToFile(string fileName); //Output the binary as hex
+    stack<string>* getErrors();                   //Get list of errors
 private:
     int       decodeLine(string line);      //Assembles a single line, buffer poitns to current input buffer.
     void      loadTable();                   //Assign cmds to instruction table.

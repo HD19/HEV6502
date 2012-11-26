@@ -31,7 +31,7 @@ public:
 
 class CPU
 {
-  private:
+  public:
     CPU(MemoryController *memory);
     ~CPU();
     void loadJumpTable();
