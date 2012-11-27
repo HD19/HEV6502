@@ -30,6 +30,14 @@
 using namespace std;
 //6502 assembler
 
+class UnLabelEntry
+{
+public:
+    UnLabelEntry(string, short);
+    string labelName;
+    short  targetAddress;
+};
+
 class Assembler
 {
 public:
@@ -58,8 +66,8 @@ private:
     byte      byteCounts[12];               //byte count per address mode.
     map<string, byte*> opTable;             //Opcode table
     map<string, short> labelMap;            //Map maintaining labels.
-    map<string, short> unresolvedLabelMap;     //Labels we don't know yet.
-    map<string, short> unresolvedBranchMap;    //labels for unlabeled branches
+    stack<UnLabelEntry*> unresolvedLabelStack;     //Labels we don't know yet.
+    stack<UnLabelEntry*> unresolvedBranchStack;    //labels for unlabeled branches
     vector<byte> currentCode;               //Vector of current code
     stack<string> errorStack;               //stack of errors we've encountered.
 

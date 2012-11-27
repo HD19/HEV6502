@@ -57,16 +57,17 @@ short extractValue(string toExtract)
 
 sbyte Assembler::calculateBranch(short addr, short branchAddr)
 {
+    short tmpAddr = branchAddr;
     //branch is after us, need to jump forward
-    if(branchAddr - addr > 0xFF)
+    if(tmpAddr - addr > 0xFF)
     {
         errorStack.push("Branch target is out of range!");
-        return branchAddr - addr;
+        return tmpAddr - addr;
     }
-    if(addr < branchAddr) // branch target is ahead of current PC
-        return branchAddr-addr;
+    if(addr < tmpAddr) // branch target is ahead of current PC
+        return tmpAddr-addr;
     else
-        return branchAddr - (addr+2); //branch target is behind, need to account for instruction loading
+        return tmpAddr - (addr+2); //branch target is behind, need to account for instruction loading
 }
 
 short Assembler::getLabel(string toCheck)
@@ -144,7 +145,7 @@ bool Assembler::isInstruction(string& toCheck)
     return true;
 }
 
-int Assembler::resolveLabels()
+/*int Assembler::resolveLabels()
 {
     map<string, short>::iterator it;
     string curKey;
@@ -153,7 +154,7 @@ int Assembler::resolveLabels()
     for(it = unresolvedLabelMap.begin(); it != unresolvedLabelMap.end(); ++it)
     {
         curKey = (it->first);
-        short targetAddr = (it->second);
+        short targetAddr = (it->second) - offset;
         short tmpAddr = getLabel(curKey);
 
         if(tmpAddr == -1)
@@ -163,14 +164,14 @@ int Assembler::resolveLabels()
         }
         byte high = (tmpAddr >> 8) & 0xFF;
         byte low = (tmpAddr) & 0xFF;
-        currentCode[++targetAddr] = high;   //IN PLACE CODE EDITING
-        currentCode[++targetAddr] = low;
+        currentCode[++targetAddr] = low;   //IN PLACE CODE EDITING
+        currentCode[++targetAddr] = high;
     }
 
     for(it = unresolvedBranchMap.begin(); it != unresolvedBranchMap.end(); ++it)
     {
         curKey = (it->first);
-        short targetBranch = (it->second);
+        short targetBranch = (it->second) - offset;
         short tmpAddr = getLabel(curKey);
 
         if(tmpAddr == -1)
@@ -178,8 +179,54 @@ int Assembler::resolveLabels()
             errorStack.push("Couldn't resolve unknown label " + curKey + " for branch!");
             return -1;
         }
-        byte branch = calculateBranch(targetBranch, tmpAddr);
+        byte branch = calculateBranch(targetBranch+1, tmpAddr-1);
         currentCode[++targetBranch] = branch;
+    }
+    return 0;
+}*/
+
+int Assembler::resolveLabels()
+{
+    //pop each item off the stack
+    UnLabelEntry* entPtr;
+    string curKey;
+    short targetAddr = 0;
+    short tmpAddr = 0;
+
+    while(!unresolvedLabelStack.empty())
+    {
+        entPtr = unresolvedLabelStack.top();
+        curKey = entPtr->labelName;
+        targetAddr = entPtr->targetAddress - offset;
+        tmpAddr = getLabel(curKey);
+        if(tmpAddr == -1)
+        {
+            errorStack.push("Couldn't resolve unkown label " + curKey);
+            return -1;
+        }
+
+        byte high = (tmpAddr >> 8) & 0xFF;
+        byte low = (tmpAddr) & 0xFF;
+        currentCode[++targetAddr] = low;
+        currentCode[++targetAddr] = high;
+        unresolvedLabelStack.pop();
+    }
+
+    while(!unresolvedBranchStack.empty())
+    {
+        entPtr = unresolvedBranchStack.top();
+        curKey = entPtr->labelName;
+        targetAddr = entPtr->targetAddress - offset;
+        tmpAddr = getLabel(curKey);
+        if(tmpAddr == -1)
+        {
+            errorStack.push("Couldn't resolve unkown label " + curKey + " for branch");
+            return -1;
+        }
+
+        sbyte branch = calculateBranch((entPtr->targetAddress)+1, tmpAddr-1);
+        currentCode[++targetAddr] = branch;
+        unresolvedBranchStack.pop();
     }
     return 0;
 }
@@ -284,13 +331,13 @@ int Assembler::decodeLine(string toDecode)
         currentCode.push_back((byte)(value & 0xFF));
         return 2;
     }
-    if(contains(curString, 'X'))
+    if(contains(curString, ',') && (contains(curString, 'X') || contains(curString,'x')))
     {
         //could be ZPX, ABX or IDX
         if(contains(curString,'('))
         {
             //IDX
-            string tmp = curString.substr(2, 2); //this is assuming $ will always have two digits
+            string tmp = curString.substr(1, 3); //this is assuming $ will always have two digits
             if(!opCodes[IDX])
             {
                 errorStack.push("Illegal address mode IDX for " + opStr);
@@ -301,8 +348,8 @@ int Assembler::decodeLine(string toDecode)
             currentCode.push_back(value);
             return 2;
         }
-        curString = curString.substr(1, curString.find(','));
-        if(curString.length() > 2)
+        curString = curString.substr(0, curString.find(','));
+        if(curString.length() > 3)
         {
             //ABX
             if(!opCodes[ABX])
@@ -332,13 +379,13 @@ int Assembler::decodeLine(string toDecode)
             return 2;
         }
     }
-    if(contains(curString, 'Y'))
+    if(contains(curString, ',') && (contains(curString, 'Y') || contains(curString, 'y')))
     {
         //could be ZPY, ABY or IDY
         if(contains(curString,'('))
         {
             //IDY
-            string tmp = curString.substr(2, 2); //this is assuming $ will always have two digits
+            string tmp = curString.substr(1, 3); //this is assuming $ will always have two digits
             if(!opCodes[IDY])
             {
                 errorStack.push("Illegal address mode IDY for " + opStr);
@@ -349,13 +396,13 @@ int Assembler::decodeLine(string toDecode)
             currentCode.push_back(value);
             return 2;
         }
-        curString = curString.substr(1, curString.find(','));
+        curString = curString.substr(0, curString.find(','));
         if(curString.length() > 2)
         {
-            //ABX
+            //ABY
             if(!opCodes[ABY])
             {
-                errorStack.push("Illegal address mode ABX for " + opStr);
+                errorStack.push("Illegal address mode ABY for " + opStr);
                 return -1;
             }
             short value = extractValue(curString);
@@ -389,16 +436,18 @@ int Assembler::decodeLine(string toDecode)
             errorStack.push("Illegal address mdoe IND for " + opStr);
             return -1;
         }
-        string tmp = curString.substr(1, curString.find(')'));
+        string tmp = curString.substr(1, curString.find(')') - 1);
         short value = -1;
-        if(!isdigit(tmp[0]))
+        if(!(isdigit(tmp[0])) && !(tmp[0] == '$'))
         {
             //we have a label
             value = getLabel(tmp);
             if(value == -1)
             {
                 //we don't have an address for that label yet!
-                unresolvedLabelMap[tmp] = currentPC; //store it's result for later resolution
+                //unresolvedLabelMap[tmp] = currentPC; //store it's result for later resolution
+                tmp = StringToUpper(tmp);
+                unresolvedLabelStack.push(new UnLabelEntry(tmp, currentPC));
             }
         }
         else
@@ -446,23 +495,50 @@ int Assembler::decodeLine(string toDecode)
         currentCode.push_back(value);
         return 2;
     }
-    //Could only be a label, assuming relative!
-    if(!opCodes[REL])
+    //Could only be a label, assuming relative or absolute!
+    if(!opCodes[REL] && !opCodes[ABS])
     {
         errorStack.push("Illegal address mode REL for " + opStr);
         return -1;
     }
     short tmpAddr = getLabel(curString);
-    if(tmpAddr == -1)
+
+    if(opStr[0] == 'B' || opStr[0] == 'b')
     {
-        //label doesn't exist yet, need to resolve as branch later, so target will be at a later address.
-        string tmp = StringToUpper(curString);
-        unresolvedBranchMap[tmp] = currentPC;
+        //relative + branch
+
+        if(tmpAddr == -1)
+        {
+            //label doesn't exist yet, need to resolve as branch later, so target will be at a later address.
+            string tmp = StringToUpper(curString);
+            //unresolvedBranchMap[tmp] = currentPC;
+            unresolvedBranchStack.push(new UnLabelEntry(tmp, currentPC));
+        }
+
+        sbyte value = calculateBranch(currentPC, tmpAddr);
+        currentCode.push_back(opCodes[REL]);
+        currentCode.push_back(value);
+        return 2;
     }
-    sbyte value = calculateBranch(currentPC, tmpAddr);
-    currentCode.push_back(opCodes[REL]);
-    currentCode.push_back(value);
-    return 2;
+    else
+    {
+        //absolute, probably a jump
+        if(tmpAddr == -1)
+        {
+            //label doesn't exist, put into unresolved labels for later.
+            string tmp = StringToUpper(curString);
+            //unresolvedLabelMap[tmp] = currentPC;
+            unresolvedLabelStack.push(new UnLabelEntry(tmp, currentPC));
+        }
+
+        byte high = (tmpAddr >> 8) & 0xFF;
+        byte low = (tmpAddr & 0xFF);
+        currentCode.push_back(opCodes[ABS]);
+        currentCode.push_back(low);
+        currentCode.push_back(high);
+        return 3;
+    }
+
 }
 
 int Assembler::assemble()
@@ -472,8 +548,8 @@ int Assembler::assemble()
     outputBlock = 0;
     currentCode.clear();
     labelMap.clear();
-    unresolvedLabelMap.clear();
-    unresolvedBranchMap.clear();
+    //unresolvedLabelStack.clear();
+    //unresolvedBranchStack.clear();
 
 
     //main logic goes here
@@ -742,4 +818,9 @@ void Assembler::loadTable()
     setEntry(0x98, IMP, "TYA");
     
     //Table should be all set.      
+}
+
+UnLabelEntry::UnLabelEntry(string name, short tAddr) : labelName(name), targetAddress(tAddr)
+{
+
 }

@@ -1,29 +1,25 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#define MAX_BLOCKS 1023
+#define MAX_BLOCKS 1024
 #define BLOCK_DIM  10
-#define ROW_BLOCKS (390/BLOCK_DIM)
-#define COL_BLOCKS (240/BLOCK_DIM)
+#define ROW_BLOCKS (320/BLOCK_DIM)
+#define COL_BLOCKS (320/BLOCK_DIM)
 
 void fillMemory(QGraphicsScene* scene)
 {
     QPen blockPen(Qt::SolidLine);
     QBrush blockBrush(Qt::SolidPattern);
     blockBrush.setColor(Qt::black);
-    int curX = 0;
-    int curY = 0;
 
     for(int i = 0; i < ROW_BLOCKS; i++)
     {
         for(int j = 0; j < COL_BLOCKS; j++)
         {
             ((j%2) ? blockBrush.setColor(Qt::red) : blockBrush.setColor(Qt::black));
-            scene->addRect(curX, curY, BLOCK_DIM, BLOCK_DIM, blockPen, blockBrush);
-            curY += BLOCK_DIM;
+            scene->addRect(i*BLOCK_DIM, j*BLOCK_DIM, BLOCK_DIM, BLOCK_DIM, blockPen, blockBrush);
         }
-        curX += BLOCK_DIM;
-        curY = 0;
+
     }
 }
 
@@ -35,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     QGraphicsScene* memScene;
 
-    memScene = new QGraphicsScene(0, 0, 388, 238);
+    memScene = new QGraphicsScene(0, 0, 320, 320);
     ui->memoryView->setScene(memScene);
 
     fillMemory(memScene);
@@ -66,6 +62,8 @@ void MainWindow::on_btnAssemble_clicked()
     string asmData = ui->codeEdit->toPlainText().toAscii().constData();
     //addStatusLine("Done");
     asmber.setText(asmData);
+    //set offset
+    asmber.setOffset(0x600);    //starting here
     int res = asmber.assemble();
     if(res == -1)
     {
@@ -99,5 +97,5 @@ void MainWindow::on_btnAssemble_clicked()
     }
     addStatusLine(QString(superSS.str().c_str()));
     superSS.str("");
-
+    return;
 }

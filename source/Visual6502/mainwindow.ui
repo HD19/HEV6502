@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>697</width>
-    <height>429</height>
+    <width>631</width>
+    <height>521</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -19,8 +19,8 @@
      <rect>
       <x>300</x>
       <y>10</y>
-      <width>390</width>
-      <height>240</height>
+      <width>322</width>
+      <height>322</height>
      </rect>
     </property>
    </widget>
@@ -28,7 +28,7 @@
     <property name="geometry">
      <rect>
       <x>320</x>
-      <y>260</y>
+      <y>370</y>
       <width>41</width>
       <height>27</height>
      </rect>
@@ -46,8 +46,8 @@
    <widget class="QLabel" name="lblA">
     <property name="geometry">
      <rect>
-      <x>300</x>
-      <y>260</y>
+      <x>310</x>
+      <y>370</y>
       <width>16</width>
       <height>21</height>
      </rect>
@@ -59,8 +59,8 @@
    <widget class="QLabel" name="lblX">
     <property name="geometry">
      <rect>
-      <x>300</x>
-      <y>290</y>
+      <x>310</x>
+      <y>400</y>
       <width>16</width>
       <height>21</height>
      </rect>
@@ -72,8 +72,8 @@
    <widget class="QLabel" name="lblY">
     <property name="geometry">
      <rect>
-      <x>300</x>
-      <y>320</y>
+      <x>310</x>
+      <y>430</y>
       <width>16</width>
       <height>21</height>
      </rect>
@@ -86,7 +86,7 @@
     <property name="geometry">
      <rect>
       <x>320</x>
-      <y>290</y>
+      <y>400</y>
       <width>41</width>
       <height>27</height>
      </rect>
@@ -102,7 +102,7 @@
     <property name="geometry">
      <rect>
       <x>320</x>
-      <y>320</y>
+      <y>430</y>
       <width>41</width>
       <height>27</height>
      </rect>
@@ -118,7 +118,7 @@
     <property name="geometry">
      <rect>
       <x>370</x>
-      <y>260</y>
+      <y>370</y>
       <width>21</width>
       <height>21</height>
      </rect>
@@ -131,36 +131,7 @@
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>260</y>
-      <width>51</width>
-      <height>27</height>
-     </rect>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
-    <property name="placeholderText">
-     <string>$0000</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="lblST">
-    <property name="geometry">
-     <rect>
-      <x>370</x>
-      <y>290</y>
-      <width>21</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>ST</string>
-    </property>
-   </widget>
-   <widget class="QLineEdit" name="lineSTReg">
-    <property name="geometry">
-     <rect>
-      <x>390</x>
-      <y>290</y>
+      <y>370</y>
       <width>51</width>
       <height>27</height>
      </rect>
@@ -176,7 +147,7 @@
     <property name="geometry">
      <rect>
       <x>370</x>
-      <y>320</y>
+      <y>400</y>
       <width>21</width>
       <height>21</height>
      </rect>
@@ -189,7 +160,7 @@
     <property name="geometry">
      <rect>
       <x>390</x>
-      <y>320</y>
+      <y>400</y>
       <width>51</width>
       <height>27</height>
      </rect>
@@ -204,8 +175,8 @@
    <widget class="QPushButton" name="btnAssemble">
     <property name="geometry">
      <rect>
-      <x>590</x>
-      <y>260</y>
+      <x>310</x>
+      <y>340</y>
       <width>98</width>
       <height>27</height>
      </rect>
@@ -217,8 +188,8 @@
    <widget class="QPushButton" name="btnExecute">
     <property name="geometry">
      <rect>
-      <x>590</x>
-      <y>320</y>
+      <x>530</x>
+      <y>340</y>
       <width>98</width>
       <height>27</height>
      </rect>
@@ -230,8 +201,8 @@
    <widget class="QPushButton" name="btnStep">
     <property name="geometry">
      <rect>
-      <x>590</x>
-      <y>290</y>
+      <x>420</x>
+      <y>340</y>
       <width>98</width>
       <height>27</height>
      </rect>
@@ -256,7 +227,7 @@
       <x>10</x>
       <y>260</y>
       <width>281</width>
-      <height>101</height>
+      <height>191</height>
      </rect>
     </property>
     <property name="acceptDrops">
@@ -266,13 +237,48 @@
      <bool>true</bool>
     </property>
    </widget>
+   <widget class="QLabel" name="lblST">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>370</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ST</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineSTReg">
+    <property name="geometry">
+     <rect>
+      <x>470</x>
+      <y>370</y>
+      <width>81</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="acceptDrops">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>00000000</string>
+    </property>
+    <property name="readOnly">
+     <bool>false</bool>
+    </property>
+    <property name="placeholderText">
+     <string>$0000</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menuBar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>697</width>
+     <width>631</width>
      <height>25</height>
     </rect>
    </property>
