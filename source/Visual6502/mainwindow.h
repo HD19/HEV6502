@@ -11,6 +11,8 @@
 #include <iomanip>
 #include <QFuture>
 #include <QtConcurrentRun>
+#include <stdlib.h>
+#include <time.h>
 #include "../assembler/assembler.h"
 #include "../cpu/cpu.h"
 #include "../mmc/basicmemory.h"
@@ -41,6 +43,8 @@ private slots:
     void on_btnExecute_clicked();
     void updateMemory();
 private:
+    void genRandom(byte addr);
+    void keyPressEvent(QKeyEvent *);
     void updateRegs();
     void fillMem();
     void initColors();

@@ -130,6 +130,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->memoryView->setScene(memScene);
     initColors();
     fillMem();
+    srand( time(NULL) );
 }
 
 MainWindow::~MainWindow()
@@ -153,13 +154,17 @@ void MainWindow::execute()
         tmp = theCpu->step();
         updateRegs();
         updateMemory();
-        this->repaint();
+        QApplication::processEvents();
+        genRandom(0xfe);
     }
     addStatusLine("Halted.");
     return;
 }
 
-
+void MainWindow::genRandom(unsigned char addr)
+{
+    theMem.writeByte(rand() % 0xFF, addr);
+}
 
 void MainWindow::on_btnAssemble_clicked()
 {
@@ -241,5 +246,26 @@ void MainWindow::on_btnStep_clicked()
 
 void MainWindow::on_btnExecute_clicked()
 {
-    QFuture<void> future = QtConcurrent::run(MainWindow::execute);
+    execute();
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *e)
+{
+    switch(e->key())
+    {
+        case Qt::Key_W:
+            theMem.writeByte('w', 0xff);
+            break;
+        case Qt::Key_D:
+            theMem.writeByte('d', 0xff);
+            break;
+        case Qt::Key_S:
+            theMem.writeByte('s', 0xff);
+            break;
+        case Qt::Key_A:
+            theMem.writeByte('a', 0xff);
+            break;
+        default:
+            break;
+    }
 }

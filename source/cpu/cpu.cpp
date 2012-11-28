@@ -1641,13 +1641,15 @@ int CPU::staay()
 
 int CPU::staix()
 {
-    cpuMem->writeByte(A, cpuMem->loadWord(indexedIndirect()));
+    short tmp = indexedIndirect();
+    cpuMem->writeByte(A, tmp);
     return 6;
 }
 
 int CPU::staiy()
 {
-    cpuMem->writeByte(A, cpuMem->loadWord(indirectIndexed()));
+    short tmp = indirectIndexed();
+    cpuMem->writeByte(A, tmp);
     return 6;
 }
 
