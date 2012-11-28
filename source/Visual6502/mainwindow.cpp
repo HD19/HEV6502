@@ -1,21 +1,17 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#define MAX_BLOCKS 1024
-#define BLOCK_DIM  10
-#define ROW_BLOCKS (320/BLOCK_DIM)
-#define COL_BLOCKS (320/BLOCK_DIM)
-
 void MainWindow::initColors()
 {
     //first is gonna be black.
 
-    colors.push_back(new QColor("#000000"));   // 0 == black
+    colors.push_back(new QColor("#000000")); // 0 == black
     colors.push_back(new QColor("#FFFFFF")); // 1 == white
     colors.push_back(new QColor("#838B8B")); // 2 == dark grey
     colors.push_back(new QColor("#CCCCCC")); // 3 == light grey
     colors.push_back(new QColor("#CD3333")); // 4 == red
     colors.push_back(new QColor("#76EEC6")); // 5 == cyan
+    colors.push_back(new QColor("#C13100")); // 6 == blood orange
     colors.push_back(new QColor("#0000CD")); // 7 == blue
     colors.push_back(new QColor("#66CD00")); // 8 == green
     colors.push_back(new QColor("#EE7621")); // 9 == orange
@@ -90,6 +86,7 @@ void MainWindow::fillMem()
     QPen blockPen(Qt::SolidLine);
     QBrush blockBrush(Qt::SolidPattern);
     //blockBrush.setColor(colors[0]);
+    memScene->clear();
 
     for(int i = 0; i < ROW_BLOCKS; i++)
     {
@@ -98,16 +95,34 @@ void MainWindow::fillMem()
             byte cellData = theMem.loadByte(0x200 + (i * ROW_BLOCKS) + j);
             //((j%2) ? blockBrush.setColor(Qt::red) : blockBrush.setColor(Qt::black));
             blockBrush.setColor(*(colors[cellData&0xF]));
-            memScene->addRect(j*BLOCK_DIM, i*BLOCK_DIM, BLOCK_DIM, BLOCK_DIM, blockPen, blockBrush);
+            rects[(i* ROW_BLOCKS) + j] = memScene->addRect(j*BLOCK_DIM, i*BLOCK_DIM, BLOCK_DIM, BLOCK_DIM, blockPen, blockBrush);
         }
 
     }
+}
+
+void MainWindow::updateMemory()
+{
+   lastMem = theMem.lastAddr;
+    if(lastMem >= 0x200 && lastMem < 0x600)
+    {
+        lastMem -= 0x200;
+        byte cellData = theMem.loadByte(lastMem + 0x200);
+
+        QBrush tmpBrush(*colors[cellData&0xF]);
+        //update cell according to theMem.lastAddr
+        (rects[lastMem])->setBrush(tmpBrush);
+        ui->memoryView->repaint();
+    }
+
+    return;
 }
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
+    //theMem.memChange = (void*)&MainWindow::updateMemory;
     theCpu = new CPU(&theMem);
     ui->setupUi(this);
     memScene = new QGraphicsScene(0, 0, 320, 320);
@@ -126,6 +141,22 @@ void MainWindow::addStatusLine(QString toAdd)
     ui->txtStatus->appendPlainText(toAdd);
    // QScrollBar *tmpSb = ui->txtStatus->verticalScrollBar();
 
+}
+
+void MainWindow::execute()
+{
+    int tmp = 0;
+    theCpu->PC = theCpu->codeBegin;
+
+    while(tmp != -1 && !theCpu->brkFlag)
+    {
+        tmp = theCpu->step();
+        updateRegs();
+        updateMemory();
+        this->repaint();
+    }
+    addStatusLine("Halted.");
+    return;
 }
 
 
@@ -195,6 +226,8 @@ void MainWindow::on_btnStep_clicked()
     {
         addStatusLine("Cannot step further, resetting");
         theCpu->PC = theCpu->codeBegin;
+        theCpu->clearFlags();
+        theCpu->clearRegs();
         theCpu->step();
     }
     if(theCpu->brkFlag)
@@ -203,5 +236,10 @@ void MainWindow::on_btnStep_clicked()
         return;
     }
     updateRegs();
-    fillMem();
+    updateMemory();
+}
+
+void MainWindow::on_btnExecute_clicked()
+{
+    QFuture<void> future = QtConcurrent::run(MainWindow::execute);
 }

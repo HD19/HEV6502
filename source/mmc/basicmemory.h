@@ -12,15 +12,17 @@ class BasicMemory : public MemoryController
 {
 public:
     BasicMemory();
-    short loadWord(short address);
-    byte  loadByte(short address);
-    void  writeWord(short address, short toWrite);
-    void  writeByte(byte toWrite, short address);
-    void  loadProgram(short address, byte* toLoad, int size);
-    short getStartAddr();
+    unsigned short loadWord(unsigned short address);
+    byte  loadByte(unsigned short address);
+    void  writeWord(unsigned short address, unsigned short toWrite);
+    void  writeByte(byte toWrite, unsigned short address);
+    void  loadProgram(unsigned short address, byte* toLoad, int size);
+    unsigned short getStartAddr();
+    unsigned short lastAddr;
+    //void (*memChange)(void);
 private:
     vector<byte> memoryMap;
-    short programStart;
+    unsigned short programStart;
 };
 
 #endif // BASICMEMORY_H

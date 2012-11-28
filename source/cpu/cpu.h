@@ -20,12 +20,12 @@ class MemoryController
 {
 public:
     //virtual ~MemoryController();
-    virtual short loadWord(short address) = 0;
-    virtual byte  loadByte(short address) = 0;
-    virtual void  writeWord(short toStore, short address) = 0;
-    virtual void  writeByte(byte toStore, short address) = 0;
-    virtual short getStartAddr() = 0;
-    virtual void  loadProgram(short startAddress, byte* toLoad, int size) = 0;
+    virtual unsigned short loadWord(unsigned short address) = 0;
+    virtual byte  loadByte(unsigned short address) = 0;
+    virtual void  writeWord(unsigned short toStore, unsigned short address) = 0;
+    virtual void  writeByte(byte toStore, unsigned short address) = 0;
+    virtual unsigned short getStartAddr() = 0;
+    virtual void  loadProgram(unsigned short startAddress, byte* toLoad, int size) = 0;
 };
 
 
@@ -49,8 +49,8 @@ class CPU
        byte signFlag;
        int currentClocks;
        unsigned short PC; // Program Counter
-       short codeEnd;
-       short codeBegin;
+       unsigned short codeEnd;
+       unsigned short codeBegin;
        MemoryController* cpuMem; //CPU's memory, note it's abstract
 
        /* Status flag updates */
@@ -62,15 +62,15 @@ class CPU
        byte pull();
 
        /* Addressing Modes */
-       short relative();
-       short zeroPageX();
-       short zeroPageY();
-       short absolute();
-       short absoluteX();
-       short absoluteY();
-       short indirect();
-       short indexedIndirect();
-       short indirectIndexed();
+       unsigned short relative();
+       unsigned short zeroPageX();
+       unsigned short zeroPageY();
+       unsigned short absolute();
+       unsigned short absoluteX();
+       unsigned short absoluteY();
+       unsigned short indirect();
+       unsigned short indexedIndirect();
+       unsigned short indirectIndexed();
 
        /* ADC */
        byte addCOp(byte toAdD);
@@ -320,6 +320,7 @@ class CPU
        int execute();
        int step();
        void clearFlags();
+       void clearRegs();
 
  };
 #endif

@@ -27,6 +27,16 @@ void CPU::clearFlags()
     this->decFlag = 0;
     this->intFlag = 0;
     this->overFlag = 0;
+    updateFlagReg();
+}
+
+void CPU::clearRegs()
+{
+    A = 0;
+    X = 0;
+    Y = 0;
+    SP = 0xFF;
+    currentClocks = 0;
 }
 
 void CPU::loadJumpTable()
@@ -291,103 +301,105 @@ int CPU::step()
     return cycles;
 }
 
-short CPU::relative()
+unsigned short CPU::relative()
 {
     char addr = cpuMem->loadByte(PC);
-    short newAddr = PC + addr +1;
+    unsigned short newAddr = PC + addr +1;
     //(addr < 0x80)? addr+= PC : addr += (PC - 256);
     //++PC; //useless, accounted for up top
     return newAddr;
 }
  
-short CPU::zeroPageX()
+unsigned short CPU::zeroPageX()
 {
-    short addr = cpuMem->loadByte(PC);
+    unsigned short addr = cpuMem->loadByte(PC);
     addr = (( addr + X ) & 0xFF);
     ++PC;
     return addr;
 }
 
-short CPU::zeroPageY()
+unsigned short CPU::zeroPageY()
 {
-    short addr = cpuMem->loadByte(PC);
+    unsigned short addr = cpuMem->loadByte(PC);
     addr = (( addr + Y ) & 0xFF);
     ++PC;
     return addr;
 }
 
-short CPU::absolute()
+unsigned short CPU::absolute()
 {
     //full address
-    short tmpAddr = cpuMem->loadWord(PC);
-    short addr= (tmpAddr << 8) & 0xFF00; //high byte
+    unsigned short tmpAddr = cpuMem->loadWord(PC);
+    unsigned short addr= (tmpAddr << 8) & 0xFF00; //high byte
     addr += ((tmpAddr >> 8)& 0xFF);       //low  byte
     //byte res = cpuMem->loadByte(addr);
     PC += 2;
     return addr;
 }
-short CPU::absoluteX()
+unsigned short CPU::absoluteX()
 {
     //full address + X with wrapping..maybe
-    short tmpAddr = cpuMem->loadWord(PC);
-    short addr = (tmpAddr << 8) & 0xFF00;
-    addr += (tmpAddr & 0xFF);
+    unsigned short tmpAddr = cpuMem->loadWord(PC);
+    unsigned short addr = (tmpAddr << 8) & 0xFF00;
+    addr += ((tmpAddr >> 8) & 0xFF);
     //(low + X > 255) ? low -= X : low += X;
-    //short addr = ((*++in) << 8); //high byte
+    //unsigned short addr = ((*++in) << 8); //high byte
     addr += X & 0xFFFF;
     //byte res = cpuMem->loadByte(addr);
     PC += 2;
     return addr;
 }
-short CPU::absoluteY()
+unsigned short CPU::absoluteY()
 {
     //full address + Y with wrapping..maybe
-    short tmpAddr = cpuMem->loadWord(PC);
-    short addr = (tmpAddr << 8) & 0xFF00;
-    addr += (tmpAddr & 0xFF);
+    unsigned short tmpAddr = cpuMem->loadWord(PC);
+    unsigned short addr = (tmpAddr << 8) & 0xFF00;
+    addr += ((tmpAddr >> 8) & 0xFF);
     addr += Y & 0xFFFF;
     PC += 2;
     return addr;
 }
-short CPU::indirect()
+unsigned short CPU::indirect()
 {
     //used for jump, load address from address.
     //load address one
-    short tmp = cpuMem->loadWord(PC);
-    short addrHigh= (tmp << 8) & 0xFF00;
-    addrHigh += (tmp & 0xFF);
-    short addrLow = addrHigh++;
+    unsigned short tmp = cpuMem->loadWord(PC);
+    unsigned short addrLow = (tmp >> 8) & 0xFF;
+    addrLow += ((tmp << 8) & 0xFF00);
+    unsigned short addrHigh = (addrLow + 1);
 
-    short target = (cpuMem->loadByte(addrHigh) << 8) & 0xFF00;
+    unsigned short target = (cpuMem->loadByte(addrHigh) << 8) & 0xFF00;
     target += (cpuMem->loadByte(addrLow));
     PC += 2;
     return target;
 
 }
 //returning the address to work with.
-short CPU::indexedIndirect()
+unsigned short CPU::indexedIndirect()
 {
     //we're loading the address at ($00(x + *in))
-    short addr = cpuMem->loadByte(PC) + X;
-    addr &= 0xFF; //load the zero page address here and +1
-    short target = cpuMem->loadByte(addr) << 8 & 0xFF00;
-    target += cpuMem->loadByte(++addr);
+    unsigned short tmp = (cpuMem->loadByte(PC) + X) & 0xFF;
+
+    unsigned short target = (cpuMem->loadByte(tmp)) & 0xFF; //low
+    ++tmp;
+    target += (cpuMem->loadByte(tmp) << 8);                 //high
     //now load the target
     ++PC;
     return target; 
 }
 //returning the address to work with
-short CPU::indirectIndexed()
+unsigned short CPU::indirectIndexed()
 {
     //rol ($2A), Y
     //The value $03 in Y is added to the address $C235 at addresses $002A and $002B for a sum of $C238. 
     //The value $2F at $C238 is shifted right (yielding $17) and written back to $C238.
-    byte  zeroTarget = cpuMem->loadByte(PC);
-    short addr = zeroTarget << 8 & 0xFF00;
-    addr += cpuMem->loadByte(++zeroTarget);
-    addr += Y;
+    byte targetTmp = cpuMem->loadByte(PC);
+    unsigned short tmp = (cpuMem->loadByte(targetTmp)) & 0xFF;
+    targetTmp++;
+    tmp += (cpuMem->loadByte(targetTmp) << 8);
+    tmp += Y;
     ++PC;
-    return addr;
+    return tmp;
 }
 
 void CPU::updateFlagReg()
@@ -457,7 +469,7 @@ byte CPU::pull()
 
 byte CPU::addCOp(byte toAdd)
 {
-    short res = A + toAdd + carryFlag;
+    unsigned short res = A + toAdd + carryFlag;
     overFlag = (!((A ^ toAdd) & 0x80) && ((A ^ res) & 0x80)) ? 1 : 0; //signed overflow
     carryFlag = res > 0xFF ? 1 : 0;  //unsigned overflow
     signFlag  = (res >> 7) & 1;      //last bit set to 1
@@ -642,6 +654,8 @@ int CPU::bcc()
     //if carry is clear, branch
     if(!carryFlag)
         PC = relative();
+    else
+        PC++;
     return 2; //could be + 1 or 2
 }
 
@@ -650,6 +664,8 @@ int CPU::bcs()
     //if carry is set, branch
     if(carryFlag)
         PC = relative();
+    else
+        PC++;
     return 2;
 }
 
@@ -658,6 +674,8 @@ int CPU::beq()
     //branch if equal
     if(zeroFlag)
         PC = relative();
+    else
+        PC++;
     return 2;
 }
 
@@ -685,6 +703,8 @@ int CPU::bmi()
 {
     if(signFlag)
         PC = relative();
+    else
+        PC++;
     return 2;
 }
 
@@ -692,6 +712,8 @@ int CPU::bne()
 {
     if(!zeroFlag)
         PC = relative();
+    else
+        PC++;
     return 2;
 }
 
@@ -699,6 +721,8 @@ int CPU::bpl()
 {
     if(!signFlag)
         PC = relative();
+    else
+        PC++;
     return 2;
 }
 
@@ -723,6 +747,8 @@ int CPU::bvc()
     //branch if overflow clear
     if(!overFlag)
         PC = relative();
+    else
+        PC++;
     return 2;
 }
 
@@ -730,6 +756,8 @@ int CPU::bvs()
 {
     if(overFlag)
         PC = relative();
+    else
+        PC++;
     return 2;
 } 
 
@@ -1056,21 +1084,21 @@ int CPU::iny()
 int CPU::jmpa()
 {
     //set PC to absolute address
-    PC = absolute() -1;
+    PC = absolute();
     return 3;
 }
 
 int CPU::jmpi()
 {
-    PC = indirect() -1;
+    PC = indirect();
     return 5;
 }
 
 int CPU::jsr()
 {
-    push((PC >> 8) & 0xFF);
-    push((PC & 0xFF));
-    PC = absolute()-1;
+    push(((PC+2) >> 8) & 0xFF);
+    push(((PC+2) & 0xFF));
+    PC = absolute();
     return 6;
 }
 
@@ -1493,7 +1521,7 @@ int CPU::rts()
 
 byte CPU::sbcOp(byte toAdd)
 {
-    short res = A - toAdd - (1 - (carryFlag ? 1 : 0));
+    unsigned short res = A - toAdd - (1 - (carryFlag ? 1 : 0));
     overFlag = (!((A ^ toAdd) & 0x80) && ((A ^ res) & 0x80)) ? 1 : 0; //signed overflow
     carryFlag = res > 0xFF ? 1 : 0;  //unsigned overflow
     signFlag  = (res >> 7) & 1;      //last bit set to 1
