@@ -132,15 +132,21 @@
      <rect>
       <x>390</x>
       <y>370</y>
-      <width>51</width>
+      <width>31</width>
       <height>27</height>
      </rect>
+    </property>
+    <property name="acceptDrops">
+     <bool>false</bool>
+    </property>
+    <property name="text">
+     <string>$00</string>
     </property>
     <property name="readOnly">
      <bool>true</bool>
     </property>
     <property name="placeholderText">
-     <string>$0000</string>
+     <string>$00</string>
     </property>
    </widget>
    <widget class="QLabel" name="lblPC">
@@ -237,39 +243,186 @@
      <bool>true</bool>
     </property>
    </widget>
-   <widget class="QLabel" name="lblST">
+   <widget class="QLineEdit" name="lineCarry">
     <property name="geometry">
      <rect>
       <x>450</x>
       <y>370</y>
-      <width>21</width>
-      <height>21</height>
+      <width>16</width>
+      <height>27</height>
      </rect>
     </property>
     <property name="text">
-     <string>ST</string>
+     <string>0</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineSTReg">
+   <widget class="QLineEdit" name="lineZero">
     <property name="geometry">
      <rect>
       <x>470</x>
       <y>370</y>
-      <width>81</width>
+      <width>16</width>
       <height>27</height>
      </rect>
     </property>
-    <property name="acceptDrops">
-     <bool>false</bool>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineDecimal">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>370</y>
+      <width>16</width>
+      <height>27</height>
+     </rect>
     </property>
     <property name="text">
-     <string>00000000</string>
+     <string>0</string>
     </property>
-    <property name="readOnly">
-     <bool>false</bool>
+   </widget>
+   <widget class="QLineEdit" name="lineOver">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>370</y>
+      <width>16</width>
+      <height>27</height>
+     </rect>
     </property>
-    <property name="placeholderText">
-     <string>$0000</string>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineBreak">
+    <property name="geometry">
+     <rect>
+      <x>530</x>
+      <y>370</y>
+      <width>16</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineInt">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>370</y>
+      <width>16</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLineEdit" name="lineNeg">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>370</y>
+      <width>16</width>
+      <height>27</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>0</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblA_2">
+    <property name="geometry">
+     <rect>
+      <x>450</x>
+      <y>400</y>
+      <width>16</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>C</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblA_3">
+    <property name="geometry">
+     <rect>
+      <x>470</x>
+      <y>400</y>
+      <width>16</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Z</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblA_4">
+    <property name="geometry">
+     <rect>
+      <x>490</x>
+      <y>400</y>
+      <width>16</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>I</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblA_5">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>400</y>
+      <width>16</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>D</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblA_6">
+    <property name="geometry">
+     <rect>
+      <x>530</x>
+      <y>400</y>
+      <width>16</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>B</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblA_7">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>400</y>
+      <width>16</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>O</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblA_8">
+    <property name="geometry">
+     <rect>
+      <x>570</x>
+      <y>400</y>
+      <width>16</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>N</string>
     </property>
    </widget>
   </widget>

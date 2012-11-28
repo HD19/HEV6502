@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QColor>
+#include <QGraphicsScene>
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -26,12 +28,19 @@ private slots:
     void on_btnAssemble_clicked();
     void addStatusLine(QString toAdd);
 
+    void on_btnStep_clicked();
+
 private:
+    void updateRegs();
+    void fillMem();
+    void initColors();
     Ui::MainWindow *ui;
     Assembler   asmber;
     CPU*        theCpu;
     BasicMemory theMem;
     stringstream superSS;
+    QGraphicsScene* memScene;
+    vector<QColor*> colors;
     //QString      statusString;
 
 };

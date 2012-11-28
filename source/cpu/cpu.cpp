@@ -14,7 +14,19 @@ CPU::CPU(MemoryController* memory)
     updateFlagReg();
     SP = 0xFF; //stack stars here, grows down.
     currentClocks = 0;
+    loadJumpTable();
     //CPU initialized, but don't call execute yourself!
+}
+
+void CPU::clearFlags()
+{
+    this->carryFlag = 0;
+    this->zeroFlag = 0;
+    this->signFlag = 0;
+    this->brkFlag = 0;
+    this->decFlag = 0;
+    this->intFlag = 0;
+    this->overFlag = 0;
 }
 
 void CPU::loadJumpTable()
@@ -222,7 +234,7 @@ void CPU::loadJumpTable()
     /* STA */
     opTable[0x85] = &CPU::staz;
     opTable[0x95] = &CPU::stazx;
-    opTable[0x9D] = &CPU::staa;
+    opTable[0x8D] = &CPU::staa;
     opTable[0x9D] = &CPU::staax;
     opTable[0x99] = &CPU::staay;
     opTable[0x81] = &CPU::staix;
@@ -266,23 +278,26 @@ int CPU::execute()
 
 int CPU::step()
 {
-    if(PC == 0xFFFF)
+    if(PC == 0xFFFF || PC >= codeEnd)
         return -1; //we're at the end of execution
     //we're just executing one instruction
     int cycles = 0;
     byte tmp = 0;
     tmp = cpuMem->loadByte(PC);
     ++PC;
+    if(!opTable[tmp]) //what instruction is this?
+        return -1;
     cycles += (this->*opTable[tmp])(); //call the function and wait
     return cycles;
 }
 
 short CPU::relative()
 {
-    byte addr = cpuMem->loadByte(PC);
-    (addr < 0x80)? addr+= PC : addr += (PC - 256);
-    ++PC;
-    return addr;
+    char addr = cpuMem->loadByte(PC);
+    short newAddr = PC + addr +1;
+    //(addr < 0x80)? addr+= PC : addr += (PC - 256);
+    //++PC; //useless, accounted for up top
+    return newAddr;
 }
  
 short CPU::zeroPageX()
@@ -306,7 +321,7 @@ short CPU::absolute()
     //full address
     short tmpAddr = cpuMem->loadWord(PC);
     short addr= (tmpAddr << 8) & 0xFF00; //high byte
-    addr += (tmpAddr & 0xFF);       //low  byte
+    addr += ((tmpAddr >> 8)& 0xFF);       //low  byte
     //byte res = cpuMem->loadByte(addr);
     PC += 2;
     return addr;
@@ -653,7 +668,7 @@ int CPU::bitz()
     ++PC;
     signFlag = (val >> 7) & 1;
     overFlag = (val >> 6) & 1;
-    zeroFlag = A & val;
+    zeroFlag = !(A & val);
     return 3;
 }
 
@@ -662,7 +677,7 @@ int CPU::bita()
     byte val = cpuMem->loadByte(absolute());
     signFlag = (val >> 7) & 1;
     overFlag = (val >> 6) & 1;
-    zeroFlag = A & val;
+    zeroFlag = !(A & val);
     return 4;
 }
 
@@ -747,7 +762,7 @@ byte CPU::cmpOp(byte toComp)
     byte res = A - toComp;
     carryFlag = (res > 0? 1 : 0);
     signFlag = (res >> 7) &1;
-    zeroFlag = res & 0xFF;
+    zeroFlag = !(res & 0xFF);
     return res;
 }
 
@@ -810,7 +825,7 @@ byte CPU::cpxOp(byte toComp)
     signed char res = X - toComp;
     carryFlag = (res >= 0? 1: 0);
     signFlag = (res >> 7)&1;
-    zeroFlag = res&0xFF;
+    zeroFlag = !(res&0xFF);
     return res;
 }
 
@@ -841,7 +856,7 @@ byte CPU::cpyOp(byte toComp)
     signed char res = Y - toComp;
     carryFlag = (res >= 0? 1: 0);
     signFlag = (res >> 7)&1;
-    zeroFlag = res&0xFF;
+    zeroFlag = !(res&0xFF);
     return res;
 }
 
@@ -871,7 +886,7 @@ byte CPU::decOp(byte toDec)
 {
     byte res = (toDec -1)&0xFF;
     signFlag = (res >> 7)&1;
-    zeroFlag = res;
+    zeroFlag = !(res);
     return res;
 }
 
@@ -904,7 +919,7 @@ int CPU::decax()
 int CPU::dex()
 {
     X -= 1;
-    zeroFlag = X;
+    zeroFlag = !X;
     signFlag = (X >> 7&1);
     return 2;
 }
@@ -912,7 +927,7 @@ int CPU::dex()
 int CPU::dey()
 {
     Y -= 1;
-    zeroFlag = Y;
+    zeroFlag = !Y;
     signFlag = (Y >> 7&1);
     return 2;
 }
@@ -991,7 +1006,7 @@ byte CPU::incOp(byte toinc)
 {
     byte res = (toinc + 1)&0xFF;
     signFlag = (res >> 7)&1;
-    zeroFlag = res;
+    zeroFlag = !(res);
     return res;
 }
 
@@ -1025,7 +1040,7 @@ int CPU::incax()
 int CPU::inx()
 {
     X += 1;
-    zeroFlag = X;
+    zeroFlag = !X;
     signFlag = (X >> 7&1);
     return 2;
 }
@@ -1033,7 +1048,7 @@ int CPU::inx()
 int CPU::iny()
 {
     Y += 1;
-    zeroFlag = Y;
+    zeroFlag = !Y;
     signFlag = (Y >> 7&1);
     return 2;
 }
@@ -1064,7 +1079,7 @@ int CPU::ldai()
     A = cpuMem->loadByte(PC);
     ++PC;
     signFlag = (A >> 7)&1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 2;
 }
 
@@ -1074,7 +1089,7 @@ int CPU::ldaz()
     PC++;
     A = cpuMem->loadByte(in);
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 3;
 }
 
@@ -1082,7 +1097,7 @@ int CPU::ldazx()
 {
     A = cpuMem->loadByte(zeroPageX());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4;
 }
 
@@ -1090,7 +1105,7 @@ int CPU::ldaa()
 {
     A = cpuMem->loadByte(absolute());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4;
 }
 
@@ -1098,7 +1113,7 @@ int CPU::ldaax()
 {
     A = cpuMem->loadByte(absoluteX());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4; //could be +1
 }
 
@@ -1106,7 +1121,7 @@ int CPU::ldaay()
 {
     A = cpuMem->loadByte(absoluteY());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4; //could be + 1
 }
 
@@ -1114,7 +1129,7 @@ int CPU::ldaix()
 {
     A = cpuMem->loadByte(indexedIndirect());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 6;
 }
 
@@ -1122,7 +1137,7 @@ int CPU::ldaiy()
 {
     A = cpuMem->loadByte(indirectIndexed());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 5; //could be + 1
 }
 
@@ -1132,7 +1147,7 @@ int CPU::ldxi()
     PC++;
     X = in;
     signFlag = (A >> 7)&1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 2;
 }
 
@@ -1142,7 +1157,7 @@ int CPU::ldxz()
     PC++;
     X = cpuMem->loadByte(in);
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 3;
 }
 
@@ -1150,7 +1165,7 @@ int CPU::ldxzy()
 {
     X = cpuMem->loadByte(zeroPageY());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4;
 }
 
@@ -1158,7 +1173,7 @@ int CPU::ldxa()
 {
     X = cpuMem->loadByte(absolute());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4;
 }
 
@@ -1166,7 +1181,7 @@ int CPU::ldxay()
 {
     X = cpuMem->loadByte(absoluteY());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4; //could be + 1
 }
 
@@ -1176,7 +1191,7 @@ int CPU::ldyi()
     PC++;
     Y = in;
     signFlag = (A >> 7)&1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 2;
 }
 
@@ -1186,7 +1201,7 @@ int CPU::ldyz()
     PC++;
     Y = cpuMem->loadByte(in);
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 3;
 }
 
@@ -1194,7 +1209,7 @@ int CPU::ldyzx()
 {
     Y = cpuMem->loadByte(zeroPageX());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4;
 }
 
@@ -1202,7 +1217,7 @@ int CPU::ldya()
 {
     Y = cpuMem->loadByte(absolute());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4;
 }
 
@@ -1210,7 +1225,7 @@ int CPU::ldyax()
 {
     Y = cpuMem->loadByte(absoluteX());
     signFlag = (A >> 7) &1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4; //could be + 1
 }
 
@@ -1393,7 +1408,7 @@ int CPU::pla()
 {
     A = pull();
     signFlag = (A >> 7)&1;
-    zeroFlag = A;
+    zeroFlag = (!A);
     return 4;
 }
 
@@ -1652,7 +1667,7 @@ int CPU::tax()
 {
     X = A;
     signFlag = (A >> 7) & 1;
-    zeroFlag =  A;
+    zeroFlag = !A;
     return 2;
 }
 
@@ -1660,7 +1675,7 @@ int CPU::tay()
 {
     Y = A;
     signFlag = (A >> 7) & 1;
-    zeroFlag =  A;
+    zeroFlag = !A;
     return 2;
 }
 
@@ -1668,7 +1683,7 @@ int CPU::tsx()
 {
     X = SP; //stack pointer register
     signFlag = (SP >> 7) & 1;
-    zeroFlag =  X;
+    zeroFlag = !X;
     return 2;
 }
 
@@ -1676,7 +1691,7 @@ int CPU::txa()
 {
     A = X;
     signFlag = (X >> 7) & 1;
-    zeroFlag =  X;
+    zeroFlag = !X;
     return 2;
 }
 
@@ -1684,7 +1699,7 @@ int CPU::txs()
 {
     SP = X;
     signFlag = (X >> 7) & 1;
-    zeroFlag =  SP;
+    zeroFlag = !SP;
     return 2;
 }
 
@@ -1692,6 +1707,6 @@ int CPU::tya()
 {
     A = Y;
     signFlag = (Y >> 7) & 1;
-    zeroFlag =  Y;
+    zeroFlag = !Y;
     return 2;
 }

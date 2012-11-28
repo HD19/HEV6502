@@ -49,6 +49,8 @@ class CPU
        byte signFlag;
        int currentClocks;
        unsigned short PC; // Program Counter
+       short codeEnd;
+       short codeBegin;
        MemoryController* cpuMem; //CPU's memory, note it's abstract
 
        /* Status flag updates */
@@ -317,6 +319,7 @@ class CPU
 
        int execute();
        int step();
+       void clearFlags();
 
  };
 #endif

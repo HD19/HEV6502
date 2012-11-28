@@ -6,18 +6,99 @@
 #define ROW_BLOCKS (320/BLOCK_DIM)
 #define COL_BLOCKS (320/BLOCK_DIM)
 
-void fillMemory(QGraphicsScene* scene)
+void MainWindow::initColors()
+{
+    //first is gonna be black.
+
+    colors.push_back(new QColor("#000000"));   // 0 == black
+    colors.push_back(new QColor("#FFFFFF")); // 1 == white
+    colors.push_back(new QColor("#838B8B")); // 2 == dark grey
+    colors.push_back(new QColor("#CCCCCC")); // 3 == light grey
+    colors.push_back(new QColor("#CD3333")); // 4 == red
+    colors.push_back(new QColor("#76EEC6")); // 5 == cyan
+    colors.push_back(new QColor("#0000CD")); // 7 == blue
+    colors.push_back(new QColor("#66CD00")); // 8 == green
+    colors.push_back(new QColor("#EE7621")); // 9 == orange
+    colors.push_back(new QColor("#87CEEB")); // A == light blue
+    colors.push_back(new QColor("#EEAD0E")); // B == gold
+    colors.push_back(new QColor("#68228B")); // C == purple
+    colors.push_back(new QColor("#FFFF00")); // D == yellow
+    colors.push_back(new QColor("#8B4513")); // E == brown
+    colors.push_back(new QColor("#228B22")); // F == forest green
+
+}
+
+void MainWindow::updateRegs()
+{
+    superSS.flush();
+    superSS.str("");
+    if(!theCpu)
+    {
+        //we don't have a CPU instantiated.
+        return;
+    }
+    superSS << "$" << setw(2) << hex << setfill('0') << (int)theCpu->A;
+    ui->lineAReg->setText(QString(superSS.str().c_str()));
+    superSS.str("");
+
+    superSS << "$" << setw(2) << hex << setfill('0') << (int)theCpu->X;
+    ui->lineXReg->setText(QString(superSS.str().c_str()));
+    superSS.str("");
+
+    superSS << "$" << setw(2) << hex << setfill('0') << (int)theCpu->Y;
+    ui->lineYReg->setText(QString(superSS.str().c_str()));
+    superSS.str("");
+
+    superSS << "$" << setw(2) << hex << setfill('0') << (int)theCpu->SP;
+    ui->lineSPReg->setText(QString(superSS.str().c_str()));
+    superSS.str("");
+
+
+    superSS << "$" << setw(4) << hex << setfill('0') << (int)theCpu->PC;
+    ui->linePCReg->setText(QString(superSS.str().c_str()));
+    superSS.str("");
+
+    //update status bits
+    ui->lineCarry->setText("0");
+    ui->lineZero->setText("0");
+    ui->lineInt->setText("0");
+    ui->lineDecimal->setText("0");
+    ui->lineBreak->setText("0");
+    ui->lineOver->setText("0");
+    ui->lineNeg->setText("0");
+
+    if(theCpu->carryFlag)
+        ui->lineCarry->setText("1");
+    if(theCpu->zeroFlag)
+        ui->lineZero->setText("1");
+    if(theCpu->intFlag)
+        ui->lineInt->setText("1");
+    if(theCpu->decFlag)
+        ui->lineDecimal->setText("1");
+    if(theCpu->brkFlag)
+        ui->lineBreak->setText("1");
+    if(theCpu->overFlag)
+        ui->lineOver->setText("1");
+    if(theCpu->signFlag)
+        ui->lineNeg->setText("1");
+
+
+}
+
+void MainWindow::fillMem()
 {
     QPen blockPen(Qt::SolidLine);
     QBrush blockBrush(Qt::SolidPattern);
-    blockBrush.setColor(Qt::black);
+    //blockBrush.setColor(colors[0]);
 
     for(int i = 0; i < ROW_BLOCKS; i++)
     {
         for(int j = 0; j < COL_BLOCKS; j++)
         {
-            ((j%2) ? blockBrush.setColor(Qt::red) : blockBrush.setColor(Qt::black));
-            scene->addRect(i*BLOCK_DIM, j*BLOCK_DIM, BLOCK_DIM, BLOCK_DIM, blockPen, blockBrush);
+            byte cellData = theMem.loadByte(0x200 + (i * ROW_BLOCKS) + j);
+            //((j%2) ? blockBrush.setColor(Qt::red) : blockBrush.setColor(Qt::black));
+            blockBrush.setColor(*(colors[cellData&0xF]));
+            memScene->addRect(j*BLOCK_DIM, i*BLOCK_DIM, BLOCK_DIM, BLOCK_DIM, blockPen, blockBrush);
         }
 
     }
@@ -29,12 +110,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     theCpu = new CPU(&theMem);
     ui->setupUi(this);
-    QGraphicsScene* memScene;
-
     memScene = new QGraphicsScene(0, 0, 320, 320);
-    ui->memoryView->setScene(memScene);
 
-    fillMemory(memScene);
+    ui->memoryView->setScene(memScene);
+    initColors();
+    fillMem();
 }
 
 MainWindow::~MainWindow()
@@ -47,6 +127,8 @@ void MainWindow::addStatusLine(QString toAdd)
    // QScrollBar *tmpSb = ui->txtStatus->verticalScrollBar();
 
 }
+
+
 
 void MainWindow::on_btnAssemble_clicked()
 {
@@ -90,12 +172,36 @@ void MainWindow::on_btnAssemble_clicked()
         {
             if(i)
                 superSS << endl;
-            superSS << setw(4) << hex << setfill('0') << i << ": ";
+            superSS << setw(4) << hex << setfill('0') << i + 0x600 << ": ";
         }
         superSS << setw(2) << hex << setfill('0') << (short)*codePtr << " ";
         codePtr++;
     }
     addStatusLine(QString(superSS.str().c_str()));
     superSS.str("");
+    theMem.loadProgram(0x600, asmber.getBinary(), res);
+    theCpu->codeBegin = 0x600;
+    theCpu->codeEnd = 0x600 + res;
+    theCpu->PC = 0x600;
+    theCpu->clearFlags();
+    updateRegs();
     return;
+}
+
+void MainWindow::on_btnStep_clicked()
+{
+    int res = theCpu->step();
+    if(res == -1)
+    {
+        addStatusLine("Cannot step further, resetting");
+        theCpu->PC = theCpu->codeBegin;
+        theCpu->step();
+    }
+    if(theCpu->brkFlag)
+    {
+        addStatusLine("Break flag set! Halted.");
+        return;
+    }
+    updateRegs();
+    fillMem();
 }
