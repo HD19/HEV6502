@@ -246,10 +246,32 @@ int Assembler::decodeLine(string toDecode)
     if(!tokens.size())
     {
         //we didn't get anything
-        errorStack.push("Couldn't tokenize given line!");
-        return -1;
+        //errorStack.push("Couldn't tokenize given line!");
+        return 0;
     }
-
+    if(curString[0] == '\t')
+    {
+        //could be part of the string
+        if(curString.length() > 1)
+        {
+            curString = curString.substr(1, curString.length() -1);
+        }
+        //get the next one
+        else if((lastToken - (currentToken+1)))
+        {
+            currentToken++;
+            curString = tokens[currentToken];
+        }
+        else
+        {
+            return 0; //no more tokens
+        }
+    }
+    if(contains(curString, '\t'))
+    {
+        //we're past the first element
+        curString = curString.substr(0, curString.find('\t'));
+    }
     if(curString[0] == ';')
     {
         //we have a comment, ignore the rest.
@@ -264,6 +286,8 @@ int Assembler::decodeLine(string toDecode)
         {
             currentToken++;
             curString = tokens[currentToken];
+            if(curString[0] == ';')
+                return 0;
         }
         else
         {
@@ -287,6 +311,12 @@ int Assembler::decodeLine(string toDecode)
     {
         currentToken++;
         curString = tokens[currentToken];
+
+        if(contains(curString, '\t'))
+        {
+            //we're past the first element
+            curString = curString.substr(0, curString.find('\t'));
+        }
     }
     else
     {
@@ -312,10 +342,11 @@ int Assembler::decodeLine(string toDecode)
         currentCode.push_back(opCodes[IMP]); 
         return 1;
     }
-    if(curString[0] == '#')
+    if(curString[0] == '#' || isdigit(curString[0]))
     {
-        curString = curString.substr(1);
-        //immediatelithium-0.10
+        if(curString[0] == '#')
+            curString = curString.substr(1);
+        //immediate
         byte value;
         
         if(!opCodes[IMM] && curString.length() > 1)
@@ -480,9 +511,9 @@ int Assembler::decodeLine(string toDecode)
         currentCode.push_back(high);
         return 3;
     }
-    if(curString.length() == 3 && curString[0] == '$')
+    if((curString.length() == 3 || curString.length() == 2 )&& curString[0] == '$')
     {
-        //string is $xx
+        //string is $xx or $x
         //ZP
         if(!opCodes[ZP])
         {

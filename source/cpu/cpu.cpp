@@ -67,7 +67,7 @@ void CPU::loadJumpTable()
     opTable[0x31] = &CPU::andiy;
 
     /* ASL */
-    opTable[0x0A] = &CPU::asla;
+    opTable[0x0A] = &CPU::aslac;
     opTable[0x06] = &CPU::aslz;
     opTable[0x16] = &CPU::aslzx;
     opTable[0x0E] = &CPU::asla;
@@ -541,8 +541,8 @@ byte CPU::andOp(byte toAnd)
 {
     //Used to perform common AND operations
     byte res = A & toAnd;
-    signFlag = (A >> 7 & 1);
-    (A > 0) ? zeroFlag = 0 : zeroFlag = 1;
+    signFlag = (res >> 7 & 1);
+    (res != 0) ? zeroFlag = 0 : zeroFlag = 1;
     
     return res;
     
@@ -611,7 +611,7 @@ byte CPU::aslOp(byte toShift)
     //arithmetic shift left
     byte res  = toShift;
     carryFlag = (res >> 7) & 1;
-    toShift   = (res << 1) & 0xFF;
+    res       = (res << 1) & 0xFF;
     signFlag  = (res >> 7) &1;
     zeroFlag  = !(res);
     return res;
@@ -788,7 +788,7 @@ int CPU::clv()
 byte CPU::cmpOp(byte toComp)
 {
     byte res = A - toComp;
-    carryFlag = (res > 0? 1 : 0);
+    carryFlag = (res >= 0? 1 : 0);
     signFlag = (res >> 7) &1;
     zeroFlag = !(res & 0xFF);
     return res;
@@ -819,32 +819,32 @@ int CPU::cmpzx()
 
 int CPU::cmpa()
 {
-    cpuMem->loadByte(absolute());
+    cmpOp(cpuMem->loadByte(absolute()));
     return 4;
 }
 
 int CPU::cmpax()
 {
-    cpuMem->loadByte(absoluteX());
+    cmpOp(cpuMem->loadByte(absoluteX()));
     return 4;   //could be +1
 }
 
 int CPU::cmpay()
 {
-    cpuMem->loadByte(absoluteY());
+    cmpOp(cpuMem->loadByte(absoluteY()));
     return 4;   //could be +1
 }
 
 int CPU::cmpix()
 {
-    cpuMem->loadByte(indexedIndirect());
+    cmpOp(cpuMem->loadByte(indexedIndirect()));
     return 6;
 }
 
 
 int CPU::cmpiy()
 {
-    cpuMem->loadByte(indirectIndexed());
+    cmpOp(cpuMem->loadByte(indirectIndexed()));
     return 5;
 }
 
@@ -922,25 +922,25 @@ int CPU::decz()
 {
     byte in = cpuMem->loadByte(PC);
     PC++;
-    cpuMem->writeByte(cpuMem->loadByte(in), in);
+    cpuMem->writeByte(decOp(cpuMem->loadByte(in)), in);
     return 5;
 }
 
 int CPU::deczx()
 {
-    cpuMem->writeByte(cpuMem->loadByte(zeroPageX()), zeroPageX());
+    cpuMem->writeByte(decOp(cpuMem->loadByte(zeroPageX())), zeroPageX());
     return 6;
 }
 
 int CPU::deca()
 {
-    cpuMem->writeByte(cpuMem->loadByte(absolute()), absolute());
+    cpuMem->writeByte(decOp(cpuMem->loadByte(absolute())), absolute());
     return 6;
 }
 
 int CPU::decax()
 {
-    cpuMem->writeByte(cpuMem->loadByte(absoluteX()), absoluteX());
+    cpuMem->writeByte(decOp(cpuMem->loadByte(absoluteX())), absoluteX());
     return 7;
 }
 
@@ -965,8 +965,8 @@ byte CPU::eorOp(byte toeor)
 {
     //Used to perform common eor operations
     byte res = A ^ toeor;
-    signFlag = (A >> 7 & 1);
-    (A > 0) ? zeroFlag = 0 : zeroFlag = 1;
+    signFlag = (res >> 7 & 1);
+    (res > 0) ? zeroFlag = 0 : zeroFlag = 1;
 
     return res;
 
@@ -1042,26 +1042,26 @@ int CPU::incz()
 {
     byte in = cpuMem->loadByte(PC);
     PC++;
-    cpuMem->writeByte(cpuMem->loadByte(in), in);
+    cpuMem->writeByte(incOp(cpuMem->loadByte(in)), in);
     return 5;
 }
 
 int CPU::inczx()
 {
 
-    cpuMem->writeByte(cpuMem->loadByte(zeroPageX()), zeroPageX());
+    cpuMem->writeByte(incOp(cpuMem->loadByte(zeroPageX())), zeroPageX());
     return 6;
 }
 
 int CPU::inca()
 {
-    cpuMem->writeByte(cpuMem->loadByte(absolute()), absolute());
+    cpuMem->writeByte(incOp(cpuMem->loadByte(absolute())), absolute());
     return 6;
 }
 
 int CPU::incax()
 {
-    cpuMem->writeByte(cpuMem->loadByte(absoluteX()), absoluteX());
+    cpuMem->writeByte(incOp(cpuMem->loadByte(absoluteX())), absoluteX());
     return 7;
 }
 
@@ -1174,8 +1174,8 @@ int CPU::ldxi()
     byte in = cpuMem->loadByte(PC);
     PC++;
     X = in;
-    signFlag = (A >> 7)&1;
-    zeroFlag = (!A);
+    signFlag = (X >> 7)&1;
+    zeroFlag = (!X);
     return 2;
 }
 
@@ -1184,32 +1184,32 @@ int CPU::ldxz()
     byte in = cpuMem->loadByte(PC);
     PC++;
     X = cpuMem->loadByte(in);
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (X >> 7) &1;
+    zeroFlag = (!X);
     return 3;
 }
 
 int CPU::ldxzy()
 {
     X = cpuMem->loadByte(zeroPageY());
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (X >> 7) &1;
+    zeroFlag = (!X);
     return 4;
 }
 
 int CPU::ldxa()
 {
     X = cpuMem->loadByte(absolute());
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (X >> 7) &1;
+    zeroFlag = (!X);
     return 4;
 }
 
 int CPU::ldxay()
 {
     X = cpuMem->loadByte(absoluteY());
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (X >> 7) &1;
+    zeroFlag = (!X);
     return 4; //could be + 1
 }
 
@@ -1218,8 +1218,8 @@ int CPU::ldyi()
     byte in = cpuMem->loadByte(PC);
     PC++;
     Y = in;
-    signFlag = (A >> 7)&1;
-    zeroFlag = (!A);
+    signFlag = (Y >> 7)&1;
+    zeroFlag = (!Y);
     return 2;
 }
 
@@ -1228,32 +1228,32 @@ int CPU::ldyz()
     byte in = cpuMem->loadByte(PC);
     PC++;
     Y = cpuMem->loadByte(in);
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (Y >> 7) &1;
+    zeroFlag = (!Y);
     return 3;
 }
 
 int CPU::ldyzx()
 {
     Y = cpuMem->loadByte(zeroPageX());
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (Y >> 7) &1;
+    zeroFlag = (!Y);
     return 4;
 }
 
 int CPU::ldya()
 {
     Y = cpuMem->loadByte(absolute());
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (Y >> 7) &1;
+    zeroFlag = (!Y);
     return 4;
 }
 
 int CPU::ldyax()
 {
     Y = cpuMem->loadByte(absoluteX());
-    signFlag = (A >> 7) &1;
-    zeroFlag = (!A);
+    signFlag = (Y >> 7) &1;
+    zeroFlag = (!Y);
     return 4; //could be + 1
 }
 
@@ -1262,8 +1262,8 @@ byte CPU::lsrOp(byte toShift)
     //arithmetic shift left
     byte res  = toShift;
     carryFlag = (res) & 1;
-    toShift   = (res >> 1) & 0xFF;
-    signFlag  = 0;
+    res       = (res >> 1) & 0xFF;
+    signFlag  = (res >> 7) & 1;
     zeroFlag  = !(res);
     return res;
 }
@@ -1306,7 +1306,7 @@ byte CPU::rolOp(byte toShift)
     //arithmetic shift left
     byte res  = toShift;
     carryFlag = (res >> 7) & 1;
-    toShift   = (res >> 1) & 0xFF;
+    res       = (res >> 1) & 0xFF;
     signFlag  = (res >> 7) &1;
     zeroFlag  = !(res);
     return res;
@@ -1354,8 +1354,8 @@ byte CPU::oraOp(byte toOra)
 {
     //Used to perform common ora operations
     byte res = A | toOra;
-    signFlag = (A >> 7 & 1);
-    (A > 0) ? zeroFlag = 0 : zeroFlag = 1;
+    signFlag = (res >> 7 & 1);
+    (res > 0) ? zeroFlag = 0 : zeroFlag = 1;
 
     return res;
 
@@ -1453,10 +1453,10 @@ byte CPU::rorOp(byte toShift)
 {
     //arithmetic shift left
     byte res  = toShift;
-    byte tmp = carryFlag << 7;
+    byte tmp  = carryFlag << 7;
     carryFlag = toShift & 1;
-    toShift   = ((res >> 1) & 0xFF) + tmp;
-    signFlag = (toShift >>7)&1;
+    res       = ((res >> 1) & 0xFF) + tmp;
+    signFlag  = (res >>7)&1;
     zeroFlag  = !(res);
     return res;
 }
@@ -1534,7 +1534,7 @@ int CPU::sbci()
     byte in = cpuMem->loadByte(PC);
     PC++;
     //add with carry immediate
-    A = (addCOp(in) & 0xFF);
+    A = (sbcOp(in) & 0xFF);
     return 2;
 }
 
@@ -1542,42 +1542,42 @@ int CPU::sbcz()
 {
     byte in = cpuMem->loadByte(PC);
     PC++;
-    A = (addCOp(cpuMem->loadByte(in)) & 0xFF);
+    A = (sbcOp(cpuMem->loadByte(in)) & 0xFF);
     return 3;
 }
 
 int CPU::sbczx()
 {
     byte val = cpuMem->loadByte(zeroPageX());
-    A = (addCOp(val) & 0xFF);
+    A = (sbcOp(val) & 0xFF);
     return 4;
 }
 
 int CPU::sbca()
 {
     byte val = cpuMem->loadByte(absolute());
-    A = (addCOp(val) & 0xFF);
+    A = (sbcOp(val) & 0xFF);
     return 4;
 }
 
 int CPU::sbcax()
 {
     byte val = cpuMem->loadByte(absoluteX());
-    A = (addCOp(val) & 0xFF);
+    A = (sbcOp(val) & 0xFF);
     return 4;   //could be +1
 }
 
 int CPU::sbcay()
 {
     byte val = cpuMem->loadByte(absoluteY());
-    A = (addCOp(val) & 0xFF);
+    A = (sbcOp(val) & 0xFF);
     return 4;   //could be +1
 }
 
 int CPU::sbcix()
 {
     byte val = cpuMem->loadByte(indexedIndirect());
-    A = (addCOp(val) & 0xFF);
+    A = (sbcOp(val) & 0xFF);
     return 6;
 }
 
@@ -1585,7 +1585,7 @@ int CPU::sbcix()
 int CPU::sbciy()
 {
     byte val = cpuMem->loadByte(indirectIndexed());
-    A = (addCOp(val) & 0xFF);
+    A = (sbcOp(val) & 0xFF);
     return 5; //could be + 1
 }
 
