@@ -682,7 +682,7 @@ int CPU::beq()
 
 int CPU::bitz()
 {
-    byte val = cpuMem->loadByte(PC);
+    byte val = cpuMem->loadByte(cpuMem->loadByte((PC)));
     ++PC;
     signFlag = (val >> 7) & 1;
     overFlag = (val >> 6) & 1;
@@ -787,7 +787,7 @@ int CPU::clv()
 
 byte CPU::cmpOp(byte toComp)
 {
-    byte res = A - toComp;
+    char res = A - toComp;
     carryFlag = (res >= 0? 1 : 0);
     signFlag = (res >> 7) &1;
     zeroFlag = !(res & 0xFF);
@@ -1519,14 +1519,15 @@ int CPU::rts()
     return 6;
 }
 
-byte CPU::sbcOp(byte toAdd)
+byte CPU::sbcOp(byte toSub)
 {
-    unsigned short res = A - toAdd - (1 - (carryFlag ? 1 : 0));
-    overFlag = (!((A ^ toAdd) & 0x80) && ((A ^ res) & 0x80)) ? 1 : 0; //signed overflow
-    carryFlag = res > 0xFF ? 1 : 0;  //unsigned overflow
-    signFlag  = (res >> 7) & 1;      //last bit set to 1
-    zeroFlag  = !(res);              //Did we get a zero?
-    return (byte)res;
+    short res = A - toSub - (1 -(carryFlag ? 1 : 0));
+    carryFlag = (res >= 0 ? 1 : 0);
+    overFlag = ((((A^res)&0x80)!=0 && ((A^toSub)&0x80)!=0)? 1 : 0);//(!((A ^ toSub) & 0x80) && ((A ^ res) & 0x80)) ? 1 : 0; //signed overflow
+    //carryFlag = res < 0 ? 0 : 1;  //unsigned overflow
+    signFlag  = ((res & 0xFF) >> 7) & 1;      //last bit set to 1
+    zeroFlag  = !((res & 0xFF));              //Did we get a zero?
+    return (byte)(res & 0xFF);
 }
 
 int CPU::sbci()
