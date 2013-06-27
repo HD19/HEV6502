@@ -1,7 +1,7 @@
 HEV6502
 =======
 
-6502 as a class emulator. The idea here is to implement a 6502's instruction and functionality generically in a C++ class. Then implementation can be done however you like. There is an abstract class within cpu.h that exposes an interface for memory usage. This way, external devices can be emulated however is necessary, the CPU class only needs that interface done. There is a demonstration application called 'Visual 6502' which can be looked at as an example application for use of the HEV6502. There's also an assembler written for the 6502 assembly language included. An example of it's use is also included in the Visual 6502.
+6502 as a class emulator. The idea here is to implement a 6502's instruction and functionality generically in a C++ class. Then implementation can be done however you like. There is an abstract class within cpu.h that exposes an interface for memory usage. This way, external devices can be emulated however is necessary, the CPU class only needs that interface done. There is a demonstration application called 'Visual 6502' which can be looked at as an example application for use of the HEV6502. There's also an assembler written for the 6502 assembly language included. An example of its use is also included in the Visual 6502.
 
 Building
 ========
